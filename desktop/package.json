@@ -1,0 +1,40 @@
+{
+  "name": "specimen-hunter-desktop",
+  "productName": "Specimen Hunter",
+  "version": "1.0.0",
+  "description": "Specimen Hunter demo slot in its own window",
+  "author": "Charlie Hall",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "game": "npm --prefix ../client run build && rm -rf game && cp -r ../client/dist game",
+    "start": "npm run game && electron .",
+    "dist": "npm run game && electron-builder --linux AppImage"
+  },
+  "devDependencies": {
+    "electron": "^44.6.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "uk.slotstudio.specimenhunter",
+    "productName": "Specimen Hunter",
+    "files": [
+      "main.cjs",
+      "icon.png",
+      "game/**"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "icon": "icon.png",
+      "category": "Game",
+      "artifactName": "SpecimenHunter.AppImage",
+      "syncDesktopName": true,
+      "executableName": "specimen-hunter"
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
+  "desktopName": "specimen-hunter.desktop"
+}

@@ -1,3 +1,5 @@
 math/.venv/
 node_modules
 dist/
+desktop/release/
+desktop/game/
