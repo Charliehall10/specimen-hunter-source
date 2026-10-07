@@ -6,7 +6,7 @@ import { MAX_WIN, FISH, PAYLINES as PAYLINE_ROWS } from './engine.js';
 import { connect, launchProfile } from './gameClient.js';
 import { W, H, CW, CH, GAP, X0, Y0, REEL_W, REEL_H, STOP_AT, ANTICIPATION_MS, START_BALANCE,
   REALITY_CHECK_MIN, DEMO_BONUS, LINE_COLOURS, BIG_WINS, SYMBOLS, GAME_NAME, money, sleep } from './config.js';
-import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture } from './art.js';
+import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture, getArtScale } from './art.js';
 import { Reel, tween, tickTweens } from './reels.js';
 import { initAudio, sfx, isMuted, setMuted, isMusicOn, setMusic, setMood, duckMusic } from './audio.js';
 import { label, Button, SpinButton, valueBox, Modal } from './ui.js';
@@ -18,7 +18,7 @@ const profile = launchProfile();
 let session = await game.start(profile);
 let STAKES = session.stakes.map(p => p / 100);   // allowed stakes in pounds (operator / age-band cap applied)
 const app = new Application();
-await app.init({ resizeTo: window, background: 0x06121a, antialias: true, resolution: Math.min(2, window.devicePixelRatio || 1), autoDensity: true });
+await app.init({ resizeTo: window, background: 0x06121a, antialias: true, resolution: Math.min(3, window.devicePixelRatio || 1), autoDensity: true });
 document.body.appendChild(app.canvas);
 
 // ------------------------------------------------------------------ scene
@@ -49,6 +49,21 @@ const stake = () => STAKES[stakeIdx];
 const fishLabel = f => [f[0], money(f[1] * stake())];
 const reels = Array.from({ length: 5 }, (_, r) => new Reel(r, tex, fishLabel));
 reels.forEach(r => root.addChild(r.view));
+
+// Redraw the symbols at exactly their on-screen pixel size whenever the game's size changes
+// (rotation, resizing), so the GPU never has to shrink or stretch them.
+let oldTex = null, sharpenTimer = 0;
+function sharpenSymbols() {
+  const target = Math.min(4, Math.max(0.75, Math.ceil(root.scale.x * app.renderer.resolution * 4) / 4));
+  if (Math.abs(target - getArtScale()) < 0.01) return;
+  const fresh = makeSymbolTextures(target);
+  if (oldTex) Object.values(oldTex).forEach(t => t.destroy(true));   // keep one previous set for open panels
+  oldTex = { ...tex };
+  Object.assign(tex, fresh);
+  reels.forEach(r => r.refreshLabels());
+}
+sharpenSymbols();
+window.addEventListener('resize', () => { clearTimeout(sharpenTimer); sharpenTimer = setTimeout(sharpenSymbols, 200); });
 
 const glow = new Graphics(); root.addChild(glow);            // anticipation glow
 const linesLayer = new Graphics(); root.addChild(linesLayer);

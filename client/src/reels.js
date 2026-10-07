@@ -2,7 +2,7 @@
 // time, so the outcome is decided before animation starts and the spin cannot be slammed.
 import { Container, Sprite, Graphics, Text, BlurFilter } from 'pixi.js';
 import { CW, CH, GAP, X0, Y0, REEL_H, FONT } from './config.js';
-import { ART_SCALE } from './art.js';
+import { getArtScale } from './art.js';
 
 const PITCH = CH + GAP;
 const SPEED = 17;            // symbols per second at full speed
@@ -30,7 +30,7 @@ export class Reel {
     this.slots = [];
     for (let j = 0; j < 4; j++) {
       const slot = new Container(); slot.pivot.set(CW / 2, CH / 2);
-      const sp = new Sprite(textures.FLOAT); sp.scale.set(1 / ART_SCALE);
+      const sp = new Sprite(textures.FLOAT); sp.scale.set(1 / getArtScale());
       const weight = new Text({ text: '', style: { fontFamily: FONT, fontSize: 19, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x2a1a00, width: 4 } } });
       weight.anchor.set(0.5); weight.position.set(CW / 2, CH - 42);
       const value = new Text({ text: '', style: { fontFamily: FONT, fontSize: 22, fontWeight: 'bold', fill: 0xffe066, stroke: { color: 0x2a1a00, width: 5 } } });
@@ -41,7 +41,7 @@ export class Reel {
     this.band = []; this.pos = 0; this.anim = null;
   }
   setEntry(slot, entry) {
-    slot.entry = entry; slot.sprite.texture = this.textures[entry.sym];
+    slot.entry = entry; slot.sprite.texture = this.textures[entry.sym]; slot.sprite.scale.set(1 / getArtScale());
     if (entry.sym === 'CASH' && entry.fish) { const [w, v] = this.fishLabel(entry.fish); slot.weight.text = w; slot.value.text = v; }
     else { slot.weight.text = ''; slot.value.text = ''; }
   }

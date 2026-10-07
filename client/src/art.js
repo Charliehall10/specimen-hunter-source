@@ -3,7 +3,10 @@
 import { Texture, CanvasSource } from 'pixi.js';
 import { W, H, CW, CH, REEL_W, REEL_H, FONT, GAME_NAME } from './config.js';
 
-export const ART_SCALE = 2;  // symbols are drawn at 2x and shown at 0.5 scale for crisp edges
+// Symbols are redrawn at the size they appear on screen (device pixels per design pixel, set by main.js),
+// so they are never shrunk or stretched by the GPU and stay crisp on phones and large monitors alike.
+let artScale = 2;
+export const getArtScale = () => artScale;
 
 function canvas(w, h, scale = 1) {
   const c = document.createElement('canvas');
@@ -292,12 +295,13 @@ const DRAW = {
   CASH: c => fish(c, { len: 132, h: 52, cy: CH / 2 - 14, scales: 'full', barbels: true, body: ['#6b4a12', '#d29a32', '#ffe7a0'], fin: '#8a5a1a' }),
 };
 
-export function makeSymbolTextures() {
+export function makeSymbolTextures(scale = artScale) {
+  artScale = scale;
   const out = {};
   for (const [sym, draw] of Object.entries(DRAW)) {
     const tier = { FLOAT: 'low', BOILIE: 'low', CORN: 'low', PELLET: 'low', FLASK: 'mid', CATAPULT: 'mid', NET: 'mid', BIVVY: 'mid',
       ROACH: 'high', BREAM: 'high', TENCH: 'high', MIRROR: 'high', WILD: 'wild', ALARM: 'alarm', CASH: 'cash' }[sym];
-    const [c, ctx] = canvas(CW, CH, ART_SCALE);
+    const [c, ctx] = canvas(CW, CH, scale);
     plate(ctx, tier);
     ctx.save(); draw(ctx); ctx.restore();
     out[sym] = new Texture({ source: new CanvasSource({ resource: c, autoGenerateMipmaps: true }) });

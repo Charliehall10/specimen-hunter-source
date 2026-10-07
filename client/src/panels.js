@@ -2,7 +2,7 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { W, H, SYMBOLS, LINE_COLOURS, MIN_SPIN_MS, REALITY_CHECK_MIN, DEMO_BONUS, money } from './config.js';
 import { PAY, PAYLINES, FISH, MAX_WIN } from './engine.js';
-import { ART_SCALE } from './art.js';
+import { getArtScale } from './art.js';
 import { Modal, Button, label } from './ui.js';
 
 const PAYING = ['MIRROR', 'TENCH', 'BREAM', 'ROACH', 'BIVVY', 'NET', 'CATAPULT', 'FLASK', 'CORN', 'PELLET', 'BOILIE', 'FLOAT'];
@@ -10,7 +10,7 @@ const body = (text, size = 17, wrap = 960, x = 0, y = 0, fill = 0xdbe7ec, ax = 0
   label(text, size, fill, { wrap, x, y, ax, ay: 0, stroke: { width: 0 }, lineHeight: size * 1.45, style: { fontWeight: 'normal', align: ax === 0 ? 'left' : 'center' } });
 
 function icon(textures, sym, x, y, s = 0.52) {
-  const sp = new Sprite(textures[sym]); sp.anchor.set(0.5); sp.scale.set(s / ART_SCALE); sp.position.set(x, y); return sp;
+  const sp = new Sprite(textures[sym]); sp.anchor.set(0.5); sp.scale.set(s / getArtScale()); sp.position.set(x, y); return sp;
 }
 
 function paytablePage(textures, stake) {
