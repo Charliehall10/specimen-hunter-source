@@ -7,6 +7,7 @@ rm -rf site/dist
 mkdir -p site/dist/media
 (cd client && npx vite build --base ./ --outDir ../site/dist/play --emptyOutDir)
 cp site/index.html site/dist/index.html
+cp site/README.md site/dist/README.md
 cp docs/media/*.jpg docs/media/*.mp4 site/dist/media/
 touch site/dist/.nojekyll
 echo "built site/dist"
