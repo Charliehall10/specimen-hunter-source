@@ -276,11 +276,14 @@ async function freeSpins(st, running) {
     await sleep(r.lines.length || Object.keys(r.cash).length ? 500 : 250);
   }
   clearLines(); lightsOff();
-  const featureWin = Math.round(state.running * st * 100) / 100;
-  await summary(played, state.fish, featureWin, featureWin >= st, capped);
+  return { total: state.running, played, fish: state.fish, capped };
+}
+
+// Runs after any big-win count-up: feature summary, then back to the dawn scene
+async function endFeature(f, win, st) {
+  await summary(f.played, f.fish, win, win >= st, f.capped);
   tween(1200, k => { dusk.alpha = 1 - k; });
   featPanel.visible = false; leftInfo.visible = true;
-  return { total: state.running, played };
 }
 
 function summary(spins, fish, win, celebrate, capped) {
@@ -343,14 +346,16 @@ async function round(force = false) {
     if (base.total >= 1) { drawLines(base.lines); sfx.lineWin(); await pulseCells(base.lines.flatMap(l => l.cells)); }
     else drawLines(base.lines, 0.45);   // return below stake: shown plainly, no sound or animation
   }
+  let feature = null;
   if (base.trigger) {
     await sleep(500);
-    const f = await freeSpins(st, total);
-    total = f.total; fsSpins = f.played;
+    feature = await freeSpins(st, total);
+    total = feature.total; fsSpins = feature.played;
   }
   total = Math.min(total, MAX_WIN);
   const win = Math.round(total * st * 100) / 100;
-  if (base.trigger || base.lines.length) await bigWin(win, st);
+  if (base.trigger || base.lines.length) await bigWin(win, st);   // big-win count-up comes before the feature summary
+  if (feature) await endFeature(feature, win, st);
   balance = Math.round((balance + win) * 100) / 100; lastWin = win;
   if (win <= 0) { msg.text = 'No win'; msg.style.fill = 0x9fb7c2; }
   else if (win < st - 1e-9) { msg.text = `Returned ${money(win)}`; msg.style.fill = 0x9fb7c2; }
