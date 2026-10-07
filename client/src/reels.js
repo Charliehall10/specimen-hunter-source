@@ -24,7 +24,9 @@ export class Reel {
     this.view = new Container(); this.view.position.set(X0 + index * (CW + GAP), Y0);
     const mask = new Graphics().rect(0, 0, CW, REEL_H).fill(0xffffff);
     this.view.addChild(mask); this.strip = new Container(); this.strip.mask = mask; this.view.addChild(this.strip);
-    this.blur = new BlurFilter({ strength: 0, quality: 2 }); this.blur.strengthX = 0; this.strip.filters = [this.blur];
+    // Motion blur only while spinning. Filters draw into an offscreen texture, so 'inherit' keeps it at the
+    // screen's pixel density, and the filter is removed when the reel stops so symbols render at full sharpness.
+    this.blur = new BlurFilter({ strength: 0, quality: 2, resolution: 'inherit' }); this.blur.strengthX = 0;
     this.slots = [];
     for (let j = 0; j < 4; j++) {
       const slot = new Container(); slot.pivot.set(CW / 2, CH / 2);
@@ -63,6 +65,7 @@ export class Reel {
     const fill = Array.from({ length: m - 3 }, filler);
     this.band = [...col, ...fill, ...prev, filler()];
     this.pos = m; this.layout();
+    this.strip.filters = [this.blur];
     return new Promise(res => { this.anim = { t0, duration, m, res, stopped: false }; });
   }
   update(now) {
@@ -74,7 +77,7 @@ export class Reel {
       const speed = u < 0.1 || u > 0.8 ? 0.4 : 1;
       this.blur.strengthY = 6 * speed; this.blur.strengthX = 0;
     } else {
-      if (!a.stopped) { a.stopped = true; this.blur.strengthY = 0; a.res(); }
+      if (!a.stopped) { a.stopped = true; this.blur.strengthY = 0; this.strip.filters = null; a.res(); }
       const b = t - a.duration;
       this.pos = 0;
       this.strip.y = b < BOUNCE_MS ? 12 * Math.sin(Math.PI * b / BOUNCE_MS) : 0;
