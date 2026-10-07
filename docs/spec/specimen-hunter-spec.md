@@ -1,7 +1,7 @@
-# Fish On!: game spec and symbol sheet (v1.0 demo)
+# Specimen Hunter: game spec and symbol sheet (v1.0 demo)
 
 UK carp-fishing video slot. 5 reels × 3 rows, 10 fixed paylines, "Three Rods" free spins with a fish-weighing cash collect.
-Name "Fish On!" (formerly working title "Specimen Hunter"); trademark not yet checked. All figures are design figures from the in-house simulator, **not certified**.
+Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" is a registered US slot trademark of King Show Games; see docs/legal). UK/EU trade mark check still to do. All figures are design figures from the in-house simulator, **not certified**.
 
 ## At a glance
 
@@ -84,7 +84,7 @@ Mean fish value: 3.052× stake.
 | Bite Alarm | 0 | 2 | 2 | 2 | 0 | 0 | 2 | 2 | 2 | 0 |
 | Specimen Fish | – | – | – | – | – | 4 | 4 | 4 | 4 | 4 |
 
-Full strips: `client/strips.json` (exported by `math/fish_on_sim.py --export-strips`).
+Full strips: `client/strips.json` (exported by `math/specimen_hunter_sim.py --export-strips`).
 
 ## Paylines (row per reel, 0 = top)
 

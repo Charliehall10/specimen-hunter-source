@@ -1,4 +1,4 @@
-// Fish On! game server: JSON API over plain node:http (no dependencies) plus the built client.
+// Specimen Hunter game server: JSON API over plain node:http (no dependencies) plus the built client.
 //   GET  /api/health                    -> { ok, game, demo }
 //   POST /api/session  { currency, balance, maxStake, ageBand }  (pence)
 //   POST /api/spin     { sessionId, stake, requestId, force }
@@ -61,5 +61,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const staticDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
   const port = Number(process.env.PORT ?? 8787);
   createHttpServer({ rgs, staticDir: fs.existsSync(staticDir) ? staticDir : null })
-    .listen(port, '127.0.0.1', () => console.log(`Fish On! server on http://localhost:${port}  (demo bonus ${demo ? 'ON' : 'OFF'})`));
+    .listen(port, '127.0.0.1', () => console.log(`Specimen Hunter server on http://localhost:${port}  (demo bonus ${demo ? 'ON' : 'OFF'})`));
 }

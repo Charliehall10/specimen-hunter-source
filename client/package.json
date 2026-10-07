@@ -1,7 +1,7 @@
 {
-  "name": "fish-on",
+  "name": "specimen-hunter",
   "version": "1.0.0",
-  "description": "Fish On!: UK carp-fishing slot (demo client)",
+  "description": "Specimen Hunter: UK carp-fishing slot (demo client)",
   "main": "index.js",
   "scripts": {
     "dev": "vite --host",

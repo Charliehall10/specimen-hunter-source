@@ -1,8 +1,8 @@
-// Shared layout, stake and presentation settings for the Fish On! client.
+// Shared layout, stake and presentation settings for the Specimen Hunter client.
 // Game maths lives in engine.js and strips.json; nothing here changes RTP.
 
 // Game name: change it here (plus index.html <title>, desktop/package.json productName) to rename the game.
-export const GAME_NAME = 'Fish On!';
+export const GAME_NAME = 'Specimen Hunter';
 
 export const W = 1280, H = 720;                    // design resolution (scaled to fit)
 export const CW = 168, CH = 136, GAP = 6;          // reel cell size

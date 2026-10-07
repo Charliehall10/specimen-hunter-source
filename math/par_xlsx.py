@@ -1,4 +1,4 @@
-"""Build the Fish On! PAR sheet (Excel) from docs/par/fish-on-par.json.
+"""Build the Specimen Hunter PAR sheet (Excel) from docs/par/specimen-hunter-par.json.
 
 Usage (repo root):  python math/par_xlsx.py        (needs openpyxl; run math/par_sheet.mjs first)
 Line-win probabilities, trigger chances, free-spin length, fish values and RTP are live formulas
@@ -12,8 +12,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter as col
 
 ROOT = Path(__file__).resolve().parent.parent
-D = json.loads((ROOT / 'docs/par/fish-on-par.json').read_text())
-OUT = ROOT / 'docs/par/fish-on-par.xlsx'
+D = json.loads((ROOT / 'docs/par/specimen-hunter-par.json').read_text())
+OUT = ROOT / 'docs/par/specimen-hunter-par.xlsx'
 
 FONT = 'Arial'
 BLUE, BLACK, GREEN = '0000FF', '000000', '008000'
@@ -235,7 +235,7 @@ widths(sl, [6, 11, 11, 11, 11, 11, 3, 11, 11, 11, 11, 11])
 
 # ------------------------------------------------------------------ Summary (first sheet)
 sm = wb.create_sheet('Summary', 0)
-sm['A1'] = 'Fish On! - PAR sheet (probability accounting report)'; sm['A1'].font = f_title
+sm['A1'] = 'Specimen Hunter - PAR sheet (probability accounting report)'; sm['A1'].font = f_title
 note(sm, 2, f"{D['version']} | 5x3, 10 fixed lines | generated {D['generated'][:10]} | design figures, NOT independently certified")
 header(sm, 4, ['Measure', 'Value', 'Source'])
 summary = [

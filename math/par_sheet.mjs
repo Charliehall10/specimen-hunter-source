@@ -1,6 +1,6 @@
-// PAR sheet data for Fish On!: exact strip maths + simulation of the production engine.
+// PAR sheet data for Specimen Hunter: exact strip maths + simulation of the production engine.
 // Usage (from the repo root):  node math/par_sheet.mjs [rounds=50000000] [seed=2026]
-// Writes docs/par/fish-on-par.json (read by math/par_xlsx.py to build the spreadsheet).
+// Writes docs/par/specimen-hunter-par.json (read by math/par_xlsx.py to build the spreadsheet).
 import fs from 'node:fs';
 import { makeEngine, PAY, PAYLINES, FISH, MAX_WIN } from '../client/src/engine.js';
 
@@ -95,7 +95,7 @@ const sim = {
 };
 
 const out = {
-  game: 'Fish On!', version: 'v1.0 demo', generated: new Date().toISOString(), maxWin: MAX_WIN, lines: PAYLINES, reels: '5x3',
+  game: 'Specimen Hunter', version: 'v1.0 demo', generated: new Date().toISOString(), maxWin: MAX_WIN, lines: PAYLINES, reels: '5x3',
   paytable: PAY, fish: FISH, strips: { base: strips.base, free_spins: strips.free_spins },
   stripCounts: { base: counts('base'), free_spins: counts('free_spins') },
   lineProbabilities: { base: baseLine, free_spins: fsLine },
@@ -103,7 +103,7 @@ const out = {
   exact, simulation: sim,
 };
 fs.mkdirSync(new URL('docs/par/', ROOT), { recursive: true });
-fs.writeFileSync(new URL('docs/par/fish-on-par.json', ROOT), JSON.stringify(out, null, 1));
+fs.writeFileSync(new URL('docs/par/specimen-hunter-par.json', ROOT), JSON.stringify(out, null, 1));
 console.log(`Exact (uncapped): base lines ${(exact.baseLineRtp * 100).toFixed(3)}%  feature ${(exact.featureRtpUncapped * 100).toFixed(3)}%  total ${(exact.totalRtpUncapped * 100).toFixed(3)}%`);
 console.log(`Exact: trigger 1 in ${(1 / pTrigBase).toFixed(1)}, E[free spins] ${expFsSpins.toFixed(3)}, E[feature win] ${exact.expectedFeatureWinUncapped.toFixed(2)}x`);
 console.log(`Sim ${N.toLocaleString()} rounds (${sim.seconds}s): RTP ${(mean * 100).toFixed(3)}% +/- ${(sim.ci95 * 100).toFixed(3)}  hit ${(sim.hitFrequency * 100).toFixed(2)}%  ` +

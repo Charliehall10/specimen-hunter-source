@@ -1,5 +1,5 @@
 // Where game outcomes come from:
-//  - 'server': the Fish On! game server decides every round (as a real remote game server would).
+//  - 'server': the Specimen Hunter game server decides every round (as a real remote game server would).
 //    Used automatically when the client is opened from the server, or with ?server=http://host:port
 //  - 'local':  the same engine runs in the browser with a secure RNG. Used for the static web demo
 //    and the desktop app, which have no server.

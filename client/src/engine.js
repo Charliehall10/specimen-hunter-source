@@ -1,4 +1,4 @@
-// Fish On! engine: JS port of math/fish_on_sim.py. The same file runs in the browser (demo mode)
+// Specimen Hunter engine: JS port of math/specimen_hunter_sim.py. The same file runs in the browser (demo mode)
 // and on the game server, so outcomes are identical wherever they are generated.
 export const MAX_WIN = 5000;
 

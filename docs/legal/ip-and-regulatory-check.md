@@ -1,4 +1,4 @@
-# IP and regulatory check: Fish On! (7 October 2026)
+# IP and regulatory check: Specimen Hunter (formerly "Fish On!") (7 October 2026)
 
 **This is preliminary desk research, not legal advice.** It is a starting point to take to a qualified
 professional: a UK chartered trade mark attorney (CITMA) for the name, a patent attorney (CIPA) for the
@@ -19,8 +19,8 @@ software in the US. Even if no UK registration exists, using the same name for a
 be seen as confusingly similar in the very market (B2B slot suppliers) you want to sell into, blocks the
 US entirely, and would make any studio or aggregator reluctant to take the game.
 
-**Recommendation:** do not use "Fish On!" commercially. Pick a new name before hosting the demo
-publicly or pitching. Candidates checked on the US register with **no live identical marks found**:
+**Recommendation:** do not use "Fish On!" commercially. **Decision (7 Oct 2026): the game is named
+"Specimen Hunter" again.** Candidates checked on the US register with **no live identical marks found**:
 "Three Rods", "Bite Alarm", "Specimen Hunter" (the original working title). None was found as an
 existing slot title in a web search. Each still needs a UK IPO and EUIPO check (below).
 
@@ -34,12 +34,12 @@ Sources: [Trademarkia "fish on" search](https://www.trademarkia.com/search/trade
 - **Fishing + cash-value fish in free spins is a well-known, heavily used format.** Reel Time Gaming's
   Fishin' Frenzy (c. 2014) and Reel Kingdom/Pragmatic's Big Bass Bonanza series use a fisherman
   wild that *collects* fish cash values during free spins.
-- **Fish On! differs:** there is no collector symbol (every fish on screen pays immediately), and the
+- **Specimen Hunter differs:** there is no collector symbol (every fish on screen pays immediately), and the
   trigger is the "Three Rods" bite-alarm mechanic (one alarm on each of reels 2, 3, 4) with retriggers.
   Lean on those differences in any pitch, and keep the look clearly your own (it is: all art is original).
 - **Closest patent found:** Aristocrat US11386753B2 ("Gaming machine and method for providing a feature
   game"; priority 2014, in force to 2035). Claim 1 requires *holding* prize-value symbols across
-  re-spins and replacing the others (hold-and-respin). Fish On! pays fish immediately with no holding,
+  re-spins and replacing the others (hold-and-respin). Specimen Hunter pays fish immediately with no holding,
   so on a plain reading it does not appear to fall within claim 1. Other results (cumulative free games,
   collect buttons, symbol modification) are generic or older.
 - Scatter-on-reels-2-3-4 triggers, 10 fixed lines and a wild that substitutes are long-standing,
@@ -56,7 +56,7 @@ Sources: [US11386753B2](https://patents.google.com/patent/US11386753B2/en),
 
 ## 3. GB regulation: how the game measures up
 
-| Requirement | Rule | Fish On! |
+| Requirement | Rule | Specimen Hunter |
 |---|---|---|
 | Max stake per game cycle: **£5** (25+), **£2** (18 to 24) | Licence condition from 9 Apr 2025 / 21 May 2025 | Server enforces the stricter of operator setting and age-band limit; tested |
 | No autoplay | RTS (2021) | None |

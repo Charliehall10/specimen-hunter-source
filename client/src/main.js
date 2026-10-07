@@ -1,4 +1,4 @@
-// Fish On!: game client. Outcomes are decided by the game server (or the same engine locally, see
+// Specimen Hunter: game client. Outcomes are decided by the game server (or the same engine locally, see
 // gameClient.js) before the reels move; this file only presents them.
 import { Application, Container, Graphics, Sprite } from 'pixi.js';
 import strips from '../strips.json';
@@ -100,8 +100,8 @@ const infoBtn = new Button('i', 50, 50, () => showInfo(), { fill: 0x1d4152, size
 const histBtn = new Button('☰', 50, 50, () => showHistory(), { fill: 0x1d4152, size: 22 });
 // The music on/off choice is remembered between sessions (per device). Full mute is not:
 // the game always starts with sound on, so a forgotten mute can't leave it silent.
-const prefs = (() => { try { return JSON.parse(localStorage.getItem('fishon-audio') || '{}'); } catch { return {}; } })();
-const savePrefs = () => { try { localStorage.setItem('fishon-audio', JSON.stringify({ music: isMusicOn() })); } catch {} };
+const prefs = (() => { try { return JSON.parse(localStorage.getItem('specimen-hunter-audio') || '{}'); } catch { return {}; } })();
+const savePrefs = () => { try { localStorage.setItem('specimen-hunter-audio', JSON.stringify({ music: isMusicOn() })); } catch {} };
 const sndBtn = new Button('♪', 50, 50, () => {
   setMuted(!isMuted()); sndBtn.text.text = isMuted() ? '✕' : '♪';
   sndBtn.fillColour = isMuted() ? 0x8a2a1a : 0x1d4152; sndBtn.draw();   // red while muted so it's obvious

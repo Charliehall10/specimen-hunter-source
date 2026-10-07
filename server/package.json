@@ -1,13 +1,15 @@
 {
-  "name": "fish-on-server",
+  "name": "specimen-hunter-server",
   "version": "1.0.0",
   "private": true,
-  "description": "Fish On! remote game server (demo RGS): sessions, stake caps, server-side outcomes",
+  "description": "Specimen Hunter remote game server (demo RGS): sessions, stake caps, server-side outcomes",
   "type": "module",
   "scripts": {
     "start": "node index.mjs",
     "start:demo": "DEMO=1 node index.mjs",
     "test": "node --test *.test.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

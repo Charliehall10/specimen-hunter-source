@@ -1,4 +1,4 @@
-// Fish On! desktop wrapper: runs the built web game in its own window (no browser UI).
+// Specimen Hunter desktop wrapper: runs the built web game in its own window (no browser UI).
 const { app, BrowserWindow, protocol, net, Menu } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -11,7 +11,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280, height: 760, minWidth: 640, minHeight: 380,
-    title: 'Fish On!', backgroundColor: '#06121a', autoHideMenuBar: true,
+    title: 'Specimen Hunter', backgroundColor: '#06121a', autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: { contextIsolation: true, sandbox: true },
   });

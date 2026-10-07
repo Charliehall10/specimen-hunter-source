@@ -1,4 +1,4 @@
-// Remote game server (RGS) logic for Fish On!: sessions, stake rules, wallet and round history.
+// Remote game server (RGS) logic for Specimen Hunter: sessions, stake rules, wallet and round history.
 // Outcomes come from the shared engine with a secure RNG; the client only presents them.
 // Money is held in integer pence. This is a demo wallet: a real deployment would call the
 // operator's wallet API (debit/credit) instead of keeping balances in memory.
@@ -13,7 +13,7 @@ export const STAKE_LADDER = [...Array.from({ length: 30 }, (_, i) => (i + 1) * 1
 // GB online slots stake limits per game cycle (Gambling Commission licence condition, 2025):
 // £2 for players aged 18 to 24, £5 for 25 and over. The operator tells us the player's band.
 export const GB_LIMITS = { '18-24': 200, '25+': 500 };
-export const GAME_INFO = { id: 'fish-on', rtp: 96.1, maxWinMultiplier: MAX_WIN, lines: 10, reels: '5x3' };
+export const GAME_INFO = { id: 'specimen-hunter', rtp: 96.1, maxWinMultiplier: MAX_WIN, lines: 10, reels: '5x3' };
 
 export class GameError extends Error {
   constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; }
