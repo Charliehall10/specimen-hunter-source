@@ -37,7 +37,10 @@ export function makeEngine(strips, rand = Math.random) {
       let count = 0;
       for (const s of syms) { if (s === target || s === 'WILD') count++; else break; }
       const pay = PAY[target];
-      if (count >= 3 && pay) { units += pay[count - 3]; lines.push({ line: i, sym: target, count }); }
+      if (count >= 3 && pay) {
+        units += pay[count - 3];
+        lines.push({ line: i, sym: target, count, units: pay[count - 3], cells: pl.slice(0, count).map((row, r) => [r, row]) });
+      }
     });
     const cash = {}; let cashTotal = 0;
     if (set === 'fs') grid.forEach((col, r) => col.forEach((s, k) => {

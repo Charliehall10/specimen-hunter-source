@@ -1,12 +1,15 @@
 {
-  "name": "client",
+  "name": "specimen-hunter",
   "version": "1.0.0",
-  "description": "",
+  "description": "Specimen Hunter: UK carp-fishing slot (demo client)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite --host",
-    "build": "vite build"
+    "build": "vite build",
+    "build:release": "VITE_DEMO_BONUS=false vite build",
+    "preview": "vite preview --host",
+    "test": "node --test src/*.test.mjs",
+    "verify": "node src/verify.mjs"
   },
   "keywords": [],
   "author": "",
