@@ -6,7 +6,7 @@ import { W, H, CW, CH, GAP, X0, Y0, REEL_W, REEL_H, STOP_AT, ANTICIPATION_MS, ST
   REALITY_CHECK_MIN, DEMO_BONUS, LINE_COLOURS, BIG_WINS, SYMBOLS, money, sleep } from './config.js';
 import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture } from './art.js';
 import { Reel, tween, tickTweens } from './reels.js';
-import { initAudio, sfx, isMuted, setMuted } from './audio.js';
+import { initAudio, sfx, isMuted, setMuted, isMusicOn, setMusic, setMood, duckMusic } from './audio.js';
 import { label, Button, SpinButton, valueBox, Modal } from './ui.js';
 import { openInfo, openHistory, realityCheck, sessionEnded, titleScreen } from './panels.js';
 
@@ -92,8 +92,13 @@ const minus = new Button('−', 52, 52, () => bump(-1), { size: 28 }), plus = ne
 minus.position.set(778, 678); plus.position.set(1002, 678); root.addChild(minus, plus);
 const infoBtn = new Button('i', 50, 50, () => showInfo(), { fill: 0x1d4152, size: 24 });
 const histBtn = new Button('☰', 50, 50, () => showHistory(), { fill: 0x1d4152, size: 22 });
-const sndBtn = new Button('♪', 50, 50, () => { setMuted(!isMuted()); sndBtn.text.text = isMuted() ? '✕' : '♪'; }, { fill: 0x1d4152, size: 22 });
-[infoBtn, histBtn, sndBtn].forEach((b, i) => { b.position.set(1100 + i * 60, 678); root.addChild(b); });
+// Sound and music preferences are remembered between sessions (per device)
+const prefs = (() => { try { return JSON.parse(localStorage.getItem('sh-audio') || '{}'); } catch { return {}; } })();
+const savePrefs = () => { try { localStorage.setItem('sh-audio', JSON.stringify({ muted: isMuted(), music: isMusicOn() })); } catch {} };
+const sndBtn = new Button('♪', 50, 50, () => { setMuted(!isMuted()); sndBtn.text.text = isMuted() ? '✕' : '♪'; savePrefs(); }, { fill: 0x1d4152, size: 22 });
+const musicBtn = new Button('♫', 50, 50, () => { setMusic(!isMusicOn()); showMusic(); savePrefs(); }, { fill: 0x1d4152, size: 22 });
+const showMusic = () => { musicBtn.text.style.fill = isMusicOn() ? 0xffffff : 0x6d7f88; };
+[infoBtn, histBtn, musicBtn, sndBtn].forEach((b, i) => { b.position.set(1068 + i * 56, 678); root.addChild(b); });
 let demoBtn = null;
 if (DEMO_BONUS) {
   demoBtn = new Button('DEMO BONUS', 160, 44, () => round(true), { fill: 0x9a4a12, size: 17 });
@@ -252,7 +257,7 @@ async function collectFish(res, st, state) {
 }
 
 async function freeSpins(st, running) {
-  sfx.feature();
+  sfx.feature(); setMood('feature'); duckMusic(2200);
   lightsOff(); clearLines();
   await banner('THREE RODS!', 0xff6b6b, 900, 76);
   await banner('10 FREE SPINS', 0xf2c14e, 900, 70);
@@ -281,6 +286,7 @@ async function freeSpins(st, running) {
 
 // Runs after any big-win count-up: feature summary, then back to the dawn scene
 async function endFeature(f, win, st) {
+  setMood('base');
   await summary(f.played, f.fish, win, win >= st, f.capped);
   tween(1200, k => { dusk.alpha = 1 - k; });
   featPanel.visible = false; leftInfo.visible = true;
@@ -307,7 +313,7 @@ function bigWin(win, st) {
     const title = label(tier.title, 84, 0xffe066, { x: W / 2, y: 280, stroke: { color: 0x3a1a00, width: 12 } });
     const amt = label(money(0), 64, 0xffffff, { x: W / 2, y: 390, stroke: { color: 0x000000, width: 9 } });
     c.addChild(dim, title, amt); root.addChild(c);
-    sfx.bigWin();
+    sfx.bigWin(); duckMusic(tier.ms + 1400);
     let skip = false; dim.on('pointertap', () => { skip = true; });
     const t0 = performance.now();
     let lastTick = 0;
@@ -392,6 +398,7 @@ window.addEventListener('keydown', e => {
   else if (e.code === 'KeyI') showInfo();
   else if (e.code === 'KeyH') showHistory();
   else if (e.code === 'KeyM') sndBtn.emit('pointertap');
+  else if (e.code === 'KeyN') musicBtn.emit('pointertap');
 });
 
 let last = performance.now();
@@ -409,4 +416,7 @@ reels.forEach((r, i) => r.show([0, 1, 2].map(filler('base', i))));
 hud();
 modals++; hud();
 await titleScreen(root, logo, tex);
-initAudio(); modals--; hud();
+initAudio();
+if (prefs.muted) { setMuted(true); sndBtn.text.text = '✕'; }
+setMusic(prefs.music !== false); showMusic();
+modals--; hud();

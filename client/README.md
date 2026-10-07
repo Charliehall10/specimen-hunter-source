@@ -11,7 +11,7 @@ npm run build          # demo build in dist/ (includes DEMO BONUS)
 npm run build:release  # build without the DEMO BONUS button
 ```
 
-Controls: Space / Enter spin, arrow keys change stake, I info, H history, M mute.
+Controls: Space / Enter spin, arrow keys change stake, I info, H history, N music on/off, M mute all sound.
 
 ## Files
 
