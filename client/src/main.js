@@ -92,10 +92,14 @@ const minus = new Button('−', 52, 52, () => bump(-1), { size: 28 }), plus = ne
 minus.position.set(778, 678); plus.position.set(1002, 678); root.addChild(minus, plus);
 const infoBtn = new Button('i', 50, 50, () => showInfo(), { fill: 0x1d4152, size: 24 });
 const histBtn = new Button('☰', 50, 50, () => showHistory(), { fill: 0x1d4152, size: 22 });
-// Sound and music preferences are remembered between sessions (per device)
+// The music on/off choice is remembered between sessions (per device). Full mute is not:
+// the game always starts with sound on, so a forgotten mute can't leave it silent.
 const prefs = (() => { try { return JSON.parse(localStorage.getItem('sh-audio') || '{}'); } catch { return {}; } })();
-const savePrefs = () => { try { localStorage.setItem('sh-audio', JSON.stringify({ muted: isMuted(), music: isMusicOn() })); } catch {} };
-const sndBtn = new Button('♪', 50, 50, () => { setMuted(!isMuted()); sndBtn.text.text = isMuted() ? '✕' : '♪'; savePrefs(); }, { fill: 0x1d4152, size: 22 });
+const savePrefs = () => { try { localStorage.setItem('sh-audio', JSON.stringify({ music: isMusicOn() })); } catch {} };
+const sndBtn = new Button('♪', 50, 50, () => {
+  setMuted(!isMuted()); sndBtn.text.text = isMuted() ? '✕' : '♪';
+  sndBtn.fillColour = isMuted() ? 0x8a2a1a : 0x1d4152; sndBtn.draw();   // red while muted so it's obvious
+}, { fill: 0x1d4152, size: 22 });
 const musicBtn = new Button('♫', 50, 50, () => { setMusic(!isMusicOn()); showMusic(); savePrefs(); }, { fill: 0x1d4152, size: 22 });
 const showMusic = () => { musicBtn.text.style.fill = isMusicOn() ? 0xffffff : 0x6d7f88; };
 [infoBtn, histBtn, musicBtn, sndBtn].forEach((b, i) => { b.position.set(1068 + i * 56, 678); root.addChild(b); });
@@ -420,6 +424,5 @@ hud();
 modals++; hud();
 await titleScreen(root, logo, tex);
 initAudio();
-if (prefs.muted) { setMuted(true); sndBtn.text.text = '✕'; }
 setMusic(prefs.music !== false); showMusic();
 modals--; hud();
