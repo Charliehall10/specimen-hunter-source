@@ -1,0 +1,18 @@
+{
+  "v": 4,
+  "createdOnFiles": { "v": 1, "at": "2026-10-07T11:50:00Z" },
+  "lists": "css",
+  "title": "Specimen Hunter: pitch deck",
+  "order": ["cover", "hook", "glance", "threerods", "freespins", "bigwins", "maths", "gbrules", "tech", "different", "status", "contact"],
+  "sections": {
+    "intro": { "description": "What the game is and the moment it is built around", "start": "cover" },
+    "game": { "description": "How it plays: the numbers, the trigger, the feature and the big moments", "start": "glance" },
+    "proof": { "description": "Why a studio can trust it: maths, GB compliance and engineering", "start": "maths" },
+    "ask": { "description": "What makes it different, where it stands and what happens next", "start": "different" }
+  },
+  "faces": {
+    "domine": { "family": "Domine", "href": "https://fonts.googleapis.com/css2?family=Domine:wght@400..700&display=swap" },
+    "dm-sans": { "family": "DM Sans", "href": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400..700&display=swap" }
+  },
+  "designSystems": []
+}

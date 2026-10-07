@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Specimen Hunter</title>
+<meta name="description" content="Specimen Hunter: an original British carp-fishing slot with the Three Rods bite-alarm feature. Playable demo, maths and engineering case study.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23f2c14e%27/%3E%3Cpath d=%27M12 32c8-12 24-14 34-4l8-8v24l-8-8c-10 10-26 8-34-4z%27 fill=%27%235a3c14%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400..700&family=Domine:wght@600..700&display=swap">
+<style>
+:root {
+  --bg: #F4EFE4; --surface: #FBF8F1; --ink: #14232C; --muted: #46545C; --line: #E2D9C6;
+  --accent: #23665F; --gold: #E3A835; --hero: #0F2431; --hero-ink: #F4EFE4; --hero-muted: #C5D3D8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1A23; --surface: #12262F; --ink: #EEE9DE; --muted: #B3C2C8; --line: #24404C; --accent: #7CC7BE;
+  }
+}
+:root[data-theme="dark"] { --bg: #0B1A23; --surface: #12262F; --ink: #EEE9DE; --muted: #B3C2C8; --line: #24404C; --accent: #7CC7BE; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 18px/1.6 'DM Sans', Arial, sans-serif; }
+img, video { max-width: 100%; height: auto; display: block; }
+a { color: var(--accent); }
+h1, h2, h3 { font-family: 'Domine', Georgia, serif; line-height: 1.15; margin: 0 0 .5em; }
+h2 { font-size: clamp(28px, 4vw, 40px); }
+h3 { font-size: 22px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+section { padding: 64px 0; }
+.hero { background: var(--hero); color: var(--hero-ink); padding: 72px 0 0; overflow: hidden; }
+.hero .eyebrow { color: var(--gold); font-weight: 700; letter-spacing: .2em; font-size: 14px; text-transform: uppercase; }
+.hero h1 { font-size: clamp(44px, 8vw, 84px); margin: 12px 0 16px; }
+.hero p.lead { color: var(--hero-muted); font-size: clamp(18px, 2.4vw, 23px); max-width: 640px; margin: 0 0 28px; }
+.btns { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 40px; }
+.btn { display: inline-block; padding: 14px 22px; border-radius: 999px; font-weight: 700; text-decoration: none; }
+.btn.primary { background: var(--gold); color: #14232C; }
+.btn.ghost { border: 2px solid var(--hero-muted); color: var(--hero-ink); }
+.hero img { border-radius: 14px 14px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.35); }
+.grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+.card img { border-radius: 10px; margin-bottom: 14px; }
+.stat b { display: block; font-family: 'Domine', Georgia, serif; font-size: 34px; color: var(--accent); }
+.stat span { color: var(--muted); font-size: 15px; }
+.note { color: var(--muted); font-size: 15px; }
+video { width: 100%; border-radius: 14px; background: #000; }
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.two { display: grid; gap: 32px; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .two { grid-template-columns: 1fr 1fr; align-items: center; } }
+footer { background: var(--hero); color: var(--hero-muted); padding: 32px 0; font-size: 15px; }
+footer a { color: var(--gold); }
+.table-scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Original slot game · playable demo</div>
+    <h1>Specimen Hunter</h1>
+    <p class="lead">A British carp-fishing slot built around one moment every angler knows: three bite alarms going off at once.</p>
+    <div class="btns">
+      <a class="btn primary" href="play/">Play the demo</a>
+      <a class="btn ghost" href="#video">Watch the video</a>
+    </div>
+    <img src="media/line-win.jpg" alt="Specimen Hunter gameplay: a line win with three wild Leather Carp at a UK lake at dawn" width="1920" height="1080">
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="wrap two">
+    <div>
+      <h2>The idea</h2>
+      <p>Carp anglers fish with three rods, each with an electronic bite alarm. When all three go at once, it's chaos and joy. In Specimen Hunter that moment is the bonus trigger: a <b>bite alarm on each of reels 2, 3 and 4</b> starts the <b>Three Rods</b> free spins.</p>
+      <p>In free spins, <b>Specimen Fish</b> land with real weights, from 2lb 4oz up to a record 64lb 8oz, and each one pays the moment it lands.</p>
+    </div>
+    <img src="media/three-rods.jpg" alt="The Three Rods trigger: alarms on reels 2, 3 and 4 with all three rod lights on" width="1920" height="1080" style="border-radius:14px">
+  </div>
+</section>
+
+<section id="video" style="padding-top:0">
+  <div class="wrap">
+    <h2>See it play</h2>
+    <video controls preload="metadata" poster="media/huge-catch.jpg">
+      <source src="media/specimen-hunter-gameplay.mp4" type="video/mp4">
+      Your browser can't play this video. <a href="media/specimen-hunter-gameplay.mp4">Download it</a>.
+    </video>
+    <p class="note">Recorded from the real game: a line win, the paytable, then a full Three Rods feature paying 139.7× stake (£139.70 at £1). Silent recording; the game itself has music and sound.</p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <h2>The numbers</h2>
+    <div class="grid">
+      <div class="card stat"><b>96.14%</b><span>Theoretical RTP, worked out exactly from the reel strips</span></div>
+      <div class="card stat"><b>1 in 152</b><span>Free spins trigger rate</span></div>
+      <div class="card stat"><b>63.7×</b><span>Average free spins win</span></div>
+      <div class="card stat"><b>25.5%</b><span>Base-game hit rate</span></div>
+      <div class="card stat"><b>7.2</b><span>Volatility (standard deviation, × stake)</span></div>
+      <div class="card stat"><b>5,000×</b><span>Maximum win per round (cap)</span></div>
+    </div>
+    <p class="note">From the PAR sheet: exact strip maths plus a 50-million-round simulation of the production engine (simulated RTP 96.06% ± 0.20%). Design figures, not independently certified.</p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <h2>The moments</h2>
+    <div class="grid">
+      <div class="card"><img src="media/big-fish.jpg" alt="A 45lb 4oz Specimen Fish worth £100 lands in free spins" width="1920" height="1080" loading="lazy"><h3>Weighed and paid</h3><p class="note">Every fish shows its weight and pays immediately. No collector symbol needed.</p></div>
+      <div class="card"><img src="media/huge-catch.jpg" alt="Huge Catch big-win celebration counting up" width="1920" height="1080" loading="lazy"><h3>Big Catch tiers</h3><p class="note">Big, Huge and Monster Catch at 15×, 50× and 200×, before the feature summary.</p></div>
+      <div class="card"><img src="media/fish-table.jpg" alt="Fish weight to prize table, up to 64lb 8oz for 1,000× stake" width="1920" height="1080" loading="lazy"><h3>Record fish</h3><p class="note">52lb 0oz pays 250× and 64lb 8oz pays 1,000× stake.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap two">
+    <div>
+      <h2>Built for GB rules</h2>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Requirement</th><th>In the game</th></tr>
+        <tr><td>£5 stake cap; £2 for 18–24s</td><td>Applied from the operator's player settings</td></tr>
+        <tr><td>2.5 s minimum spin</td><td>Fixed reel timings</td></tr>
+        <tr><td>No turbo or slam stop</td><td>Reels can't be sped up or stopped</td></tr>
+        <tr><td>No celebrating returns ≤ stake</td><td>Shown plainly: no sound or animation</td></tr>
+        <tr><td>No autoplay or bonus buy</td><td>Neither exists</td></tr>
+        <tr><td>Player information</td><td>Session time, net position, history, reality checks</td></tr>
+      </table>
+      </div>
+    </div>
+    <div>
+      <h2>How it's built</h2>
+      <p><b>One engine, two places.</b> The same tested engine file decides outcomes in the browser demo and on a dependency-free game server, which handles sessions, stake caps, a whole-pence wallet and safe retries.</p>
+      <p><b>Everything original.</b> Symbols, scenery, music and sound are generated in code with PixiJS and Web Audio: no licensed assets.</p>
+      <p><b>Checked.</b> 15 automated tests, and a formula-driven PAR sheet that matches the engine exactly.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Created by Charlie Hall · [your email] · [LinkedIn]</p>
+    <p>Demo money only. This demo is not certified for real-money play. 18+. If gambling stops being fun, visit <a href="https://www.begambleaware.org/">BeGambleAware.org</a>.</p>
+  </div>
+</footer>
+</body>
+</html>
