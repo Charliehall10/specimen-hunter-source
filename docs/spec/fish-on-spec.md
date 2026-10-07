@@ -1,7 +1,7 @@
-# Specimen Hunter: game spec and symbol sheet (v1.0 demo)
+# Fish On!: game spec and symbol sheet (v1.0 demo)
 
 UK carp-fishing video slot. 5 reels × 3 rows, 10 fixed paylines, "Three Rods" free spins with a fish-weighing cash collect.
-Working title; trademark not yet checked. All figures are design figures from the in-house simulator, **not certified**.
+Name "Fish On!" (formerly working title "Specimen Hunter"); trademark not yet checked. All figures are design figures from the in-house simulator, **not certified**.
 
 ## At a glance
 

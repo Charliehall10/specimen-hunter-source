@@ -1,8 +1,8 @@
 {
-  "name": "specimen-hunter-desktop",
-  "productName": "Specimen Hunter",
+  "name": "fish-on-desktop",
+  "productName": "Fish On!",
   "version": "1.0.0",
-  "description": "Specimen Hunter demo slot in its own window",
+  "description": "Fish On! demo slot in its own window",
   "author": "Charlie Hall",
   "license": "UNLICENSED",
   "private": true,
@@ -17,8 +17,8 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "uk.slotstudio.specimenhunter",
-    "productName": "Specimen Hunter",
+    "appId": "uk.slotstudio.fishon",
+    "productName": "Fish On!",
     "files": [
       "main.cjs",
       "icon.png",
@@ -28,13 +28,13 @@
       "target": "AppImage",
       "icon": "icon.png",
       "category": "Game",
-      "artifactName": "SpecimenHunter.AppImage",
+      "artifactName": "FishOn.AppImage",
       "syncDesktopName": true,
-      "executableName": "specimen-hunter"
+      "executableName": "fish-on"
     },
     "directories": {
       "output": "release"
     }
   },
-  "desktopName": "specimen-hunter.desktop"
+  "desktopName": "fish-on.desktop"
 }

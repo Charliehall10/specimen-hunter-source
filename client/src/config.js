@@ -1,4 +1,4 @@
-// Shared layout, stake and presentation settings for the Specimen Hunter client.
+// Shared layout, stake and presentation settings for the Fish On! client.
 // Game maths lives in engine.js and strips.json; nothing here changes RTP.
 
 export const W = 1280, H = 720;                    // design resolution (scaled to fit)

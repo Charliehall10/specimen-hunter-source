@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SPECIMEN HUNTER - v0.1 math simulator
+FISH ON! (formerly Specimen Hunter) - v0.1 math simulator
 5x3, 10 fixed paylines, "Three Rods" scatter (bite alarms, reels 2-4 only),
 free spins with simple fish-weight collect.
 
@@ -259,7 +259,7 @@ def report(st):
     var = st["sumsq"] / n - mean ** 2
     sd = var ** 0.5
     se = sd / n ** 0.5
-    print(f"\n=== SPECIMEN HUNTER v0.1 | {n:,} spins ===")
+    print(f"\n=== FISH ON! v0.1 | {n:,} spins ===")
     print(f"Total RTP            {mean*100:7.3f}%   (95% CI +/- {1.96*se*100:.3f}%)")
     print(f"  base line wins     {st['base_sum']/n*100:7.3f}%")
     print(f"  free spins         {(mean - st['base_sum']/n)*100:7.3f}%")

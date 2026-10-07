@@ -1,9 +1,6 @@
-# Specimen Hunter client
+# Fish On! client
 
-PixiJS 8 + Vite. All art, music and sound effects are generated in code. The only asset file is the
-"Fish on!" voice line (`src/assets/fish-on.wav`), made with Piper TTS using the en_GB
-northern_english_male voice (trained on OpenSLR 83, CC-BY-SA 4.0; credit it wherever the game is shown).
-For a commercial release, replace it with a recorded or properly licensed voice-over.
+PixiJS 8 + Vite. All art, music and sound effects are generated in code; there are no asset files.
 
 ```
 npm install            # first time only

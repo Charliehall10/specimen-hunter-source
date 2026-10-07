@@ -388,13 +388,13 @@ export function makeFrameTexture() {
 export function makeLogoTexture() {
   const w = 760, h = 110, [c, ctx] = canvas(w, h, 2);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = `bold 64px ${FONT}`;
+  ctx.font = `bold 78px ${FONT}`;
   shadow(ctx, 12, 5, 'rgba(0,0,0,0.7)');
-  ctx.lineWidth = 10; ctx.strokeStyle = '#2a1606'; ctx.lineJoin = 'round'; ctx.strokeText('SPECIMEN HUNTER', w / 2, 52);
+  ctx.lineWidth = 10; ctx.strokeStyle = '#2a1606'; ctx.lineJoin = 'round'; ctx.strokeText('FISH ON!', w / 2, 52);
   noShadow(ctx);
   ctx.fillStyle = lin(ctx, 0, 22, 0, 82, [[0, '#fff6c8'], [0.45, '#f2c14e'], [0.55, '#d08a1a'], [1, '#ffdf7a']]);
-  ctx.fillText('SPECIMEN HUNTER', w / 2, 52);
-  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeText('SPECIMEN HUNTER', w / 2, 51);
+  ctx.fillText('FISH ON!', w / 2, 52);
+  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeText('FISH ON!', w / 2, 51);
   return Texture.from(c);
 }
 
