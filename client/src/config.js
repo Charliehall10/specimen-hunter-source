@@ -1,6 +1,9 @@
 // Shared layout, stake and presentation settings for the Fish On! client.
 // Game maths lives in engine.js and strips.json; nothing here changes RTP.
 
+// Game name: change it here (plus index.html <title>, desktop/package.json productName) to rename the game.
+export const GAME_NAME = 'Fish On!';
+
 export const W = 1280, H = 720;                    // design resolution (scaled to fit)
 export const CW = 168, CH = 136, GAP = 6;          // reel cell size
 export const REEL_W = 5 * CW + 4 * GAP;
@@ -15,7 +18,6 @@ export const MIN_SPIN_MS = 2500;
 // 10p steps up to £3.00, then 50p steps up to £5.00 (34 levels)
 export const STAKES = [...Array.from({ length: 30 }, (_, i) => Math.round((i + 1) * 10) / 100), 3.5, 4, 4.5, 5];
 export const START_BALANCE = 100;
-export const START_STAKE_INDEX = 9;               // £1.00
 export const REALITY_CHECK_MIN = 30;
 
 // Demo-only free bonus trigger. Release builds: VITE_DEMO_BONUS=false (npm run build:release)

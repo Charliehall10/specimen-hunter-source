@@ -1,5 +1,14 @@
-// Fish On! engine: JS port of math/fish_on_sim.py (prototype RNG = Math.random)
+// Fish On! engine: JS port of math/fish_on_sim.py. The same file runs in the browser (demo mode)
+// and on the game server, so outcomes are identical wherever they are generated.
 export const MAX_WIN = 5000;
+
+// Cryptographically secure uniform [0, 1) with 53 bits of randomness (Web Crypto: browsers and Node 19+).
+// Not a certified RNG: certification is done by an approved test house on the production server.
+export function cryptoRand() {
+  const u = new Uint32Array(2);
+  globalThis.crypto.getRandomValues(u);
+  return ((u[0] >>> 5) * 67108864 + (u[1] >>> 6)) / 9007199254740992;
+}
 export const PAY = {
   FLOAT:[6,15,30], BOILIE:[6,15,30], CORN:[9,24,45], PELLET:[9,24,45],
   FLASK:[12,30,75], CATAPULT:[15,36,90], NET:[18,45,120], BIVVY:[24,60,150],
@@ -61,5 +70,21 @@ export function makeEngine(strips, rand = Math.random) {
     }
     return { total: Math.min(t, MAX_WIN), hit: b.lines.length > 0, trig: b.trigger, fsSpins };
   }
-  return { spin, playRound };
+  // Whole game round decided up front (server style): base spin plus every free spin, in order.
+  // Same rules and RNG order as playRound(), so both give identical results for the same seed.
+  function playRoundDetailed(force = false) {
+    const base = spin('base', force), freeSpins = [];
+    let t = base.total, capped = false;
+    if (base.trigger) {
+      let left = 10;
+      while (left > 0) {
+        const r = spin('fs'); t += r.total; left--;
+        if (r.trigger) left += 5;
+        freeSpins.push({ ...r, spinsLeft: left });
+        if (t >= MAX_WIN) { capped = true; break; }
+      }
+    }
+    return { base, freeSpins, total: Math.min(t, MAX_WIN), capped };
+  }
+  return { spin, playRound, playRoundDetailed };
 }

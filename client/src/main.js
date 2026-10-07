@@ -1,16 +1,22 @@
-// Fish On!: game client. Outcomes come from engine.js; this file only presents them.
+// Fish On!: game client. Outcomes are decided by the game server (or the same engine locally, see
+// gameClient.js) before the reels move; this file only presents them.
 import { Application, Container, Graphics, Sprite } from 'pixi.js';
 import strips from '../strips.json';
-import { makeEngine, MAX_WIN, FISH, PAYLINES as PAYLINE_ROWS } from './engine.js';
-import { W, H, CW, CH, GAP, X0, Y0, REEL_W, REEL_H, STOP_AT, ANTICIPATION_MS, STAKES, START_BALANCE, START_STAKE_INDEX,
-  REALITY_CHECK_MIN, DEMO_BONUS, LINE_COLOURS, BIG_WINS, SYMBOLS, money, sleep } from './config.js';
+import { MAX_WIN, FISH, PAYLINES as PAYLINE_ROWS } from './engine.js';
+import { connect, launchProfile } from './gameClient.js';
+import { W, H, CW, CH, GAP, X0, Y0, REEL_W, REEL_H, STOP_AT, ANTICIPATION_MS, START_BALANCE,
+  REALITY_CHECK_MIN, DEMO_BONUS, LINE_COLOURS, BIG_WINS, SYMBOLS, GAME_NAME, money, sleep } from './config.js';
 import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture } from './art.js';
 import { Reel, tween, tickTweens } from './reels.js';
 import { initAudio, sfx, isMuted, setMuted, isMusicOn, setMusic, setMood, duckMusic } from './audio.js';
 import { label, Button, SpinButton, valueBox, Modal } from './ui.js';
 import { openInfo, openHistory, realityCheck, sessionEnded, titleScreen } from './panels.js';
 
-const E = makeEngine(strips);
+document.title = GAME_NAME;
+const game = await connect();
+const profile = launchProfile();
+let session = await game.start(profile);
+let STAKES = session.stakes.map(p => p / 100);   // allowed stakes in pounds (operator / age-band cap applied)
 const app = new Application();
 await app.init({ resizeTo: window, background: 0x06121a, antialias: true, resolution: Math.min(2, window.devicePixelRatio || 1), autoDensity: true });
 document.body.appendChild(app.canvas);
@@ -38,7 +44,7 @@ const logoSp = new Sprite(logo); logoSp.anchor.set(0.5); logoSp.scale.set(0.42);
 const { texture: frameTex, pad } = makeFrameTexture();
 const frame = new Sprite(frameTex); frame.position.set(X0 - pad, Y0 - pad); root.addChild(frame);
 
-let stakeIdx = START_STAKE_INDEX;
+let stakeIdx = Math.max(0, STAKES.indexOf(1) >= 0 ? STAKES.indexOf(1) : STAKES.length - 1);   // start at £1.00 if allowed
 const stake = () => STAKES[stakeIdx];
 const fishLabel = f => [f[0], money(f[1] * stake())];
 const reels = Array.from({ length: 5 }, (_, r) => new Reel(r, tex, fishLabel));
@@ -104,16 +110,26 @@ const musicBtn = new Button('♫', 50, 50, () => { setMusic(!isMusicOn()); showM
 const showMusic = () => { musicBtn.text.style.fill = isMusicOn() ? 0xffffff : 0x6d7f88; };
 [infoBtn, histBtn, musicBtn, sndBtn].forEach((b, i) => { b.position.set(1068 + i * 56, 678); root.addChild(b); });
 let demoBtn = null;
-if (DEMO_BONUS) {
+let ageBtn = null;
+if (DEMO_BONUS && session.demo) {
   demoBtn = new Button('DEMO BONUS', 160, 44, () => round(true), { fill: 0x9a4a12, size: 17 });
   demoBtn.position.set(95, 430); root.addChild(demoBtn);
   root.addChild(label('demo only · free\nremoved in release builds', 11, 0x9fb7c2, { x: 95, y: 470, stroke: { width: 2, color: 0x000000 } }));
+  // Demo of operator-set stake caps: GB limit is £2 per spin for 18-24s, £5 for 25+
+  ageBtn = new Button('', 160, 40, () => switchAgeBand(), { fill: 0x1d4152, size: 13 });
+  ageBtn.position.set(95, 528); root.addChild(ageBtn);
+  root.addChild(label('demo: operator stake cap', 11, 0x9fb7c2, { x: 95, y: 558, stroke: { width: 2, color: 0x000000 } }));
 }
-const resetBtn = new Button('RESET DEMO BALANCE', 250, 44, () => { balance = START_BALANCE; netBase = START_BALANCE; resetBtn.visible = false; msg.text = ''; hud(); }, { fill: 0x7a2e12, size: 16 });
+const modeT = label(game.mode === 'server' ? 'Outcomes: game server' : 'Outcomes: in-browser engine (demo)', 11, 0x9fb7c2, { x: 18, y: 40, ax: 0, ay: 0, stroke: { width: 2, color: 0x000000 } });
+root.addChild(modeT);
+const resetBtn = new Button('RESET DEMO BALANCE', 250, 44, async () => {
+  session = await game.start({ ...profile, balance: START_BALANCE * 100 });
+  balance = session.balance / 100; netBase = balance; resetBtn.visible = false; msg.text = ''; hud();
+}, { fill: 0x7a2e12, size: 16 });
 resetBtn.position.set(W / 2, 622); resetBtn.visible = false; root.addChild(resetBtn);
 
 // ------------------------------------------------------------------ state
-let balance = START_BALANCE, netBase = START_BALANCE, lastWin = 0, busy = false, modals = 0;
+let balance = session.balance / 100, netBase = balance, lastWin = 0, busy = false, modals = 0;
 let sessionStart = Date.now(), lastCheck = Date.now(), ended = false;
 const history = [];
 let idle = null;     // cycling line-win display while waiting for the next spin
@@ -128,6 +144,17 @@ function hud() {
   spinBtn.enabled = ready; minus.enabled = ready && stakeIdx > 0; plus.enabled = ready && stakeIdx < STAKES.length - 1;
   infoBtn.enabled = !busy && modals === 0; histBtn.enabled = !busy && modals === 0;
   if (demoBtn) demoBtn.enabled = ready;
+  if (ageBtn) { ageBtn.text.text = `PLAYER ${profile.ageBand} · MAX ${money(session.maxStake / 100)}`; ageBtn.enabled = ready; }
+}
+// Demo only: switch the player's age band to show the operator stake cap working
+async function switchAgeBand() {
+  if (busy || modals || ended) return;
+  profile.ageBand = profile.ageBand === '25+' ? '18-24' : '25+';
+  const keep = stake();
+  session = await game.start({ ...profile, balance: Math.round(balance * 100) });
+  STAKES = session.stakes.map(p => p / 100);
+  stakeIdx = Math.max(0, STAKES.filter(v => v <= keep + 1e-9).length - 1);   // clamp the stake to the new cap
+  reels.forEach(r => r.refreshLabels()); hud();
 }
 const mins = () => Math.floor((Date.now() - sessionStart) / 60000);
 function clock() {
@@ -262,7 +289,7 @@ async function collectFish(res, st, state) {
   }
 }
 
-async function freeSpins(st, running) {
+async function freeSpins(st, running, spins, cappedRound) {
   sfx.feature(); setMood('feature'); duckMusic(2200);
   lightsOff(); clearLines();
   await banner('THREE RODS!', 0xff6b6b, 900, 76);
@@ -270,11 +297,11 @@ async function freeSpins(st, running) {
   tween(1200, k => { dusk.alpha = k; });
   const state = { running, fish: 0 };
   featPanel.visible = true; leftInfo.visible = false; meter.text = money(running * st); fishCount.text = '0';
-  let left = 10, played = 0, capped = false;
-  while (left > 0) {
+  let played = 0, capped = false;
+  for (const r of spins) {            // spins were decided before the round started; just play them back
     clearLines(); lightsOff();
-    const r = E.spin('fs'); left--; played++;
-    fsCount.text = `${played} / ${played + left}`;
+    played++;
+    fsCount.text = `${played} / ${played + r.spinsLeft - (r.trigger ? 5 : 0)}`;
     await spinReels('fs', r);
     await collectFish(r, st, state);
     if (r.lines.length) {
@@ -282,8 +309,8 @@ async function freeSpins(st, running) {
       state.running += r.lines.reduce((a, l) => a + l.units, 0) / 10;
       meter.text = money(Math.min(state.running, MAX_WIN) * st);
     }
-    if (r.trigger) { left += 5; fsCount.text = `${played} / ${played + left}`; sfx.retrigger(); await banner('+5 FREE SPINS', 0xff8080, 900); }
-    if (state.running >= MAX_WIN) { state.running = MAX_WIN; left = 0; capped = true; await banner('MAXIMUM WIN REACHED', 0xffe066, 1500, 54); }
+    if (r.trigger) { fsCount.text = `${played} / ${played + r.spinsLeft}`; sfx.retrigger(); await banner('+5 FREE SPINS', 0xff8080, 900); }
+    if (cappedRound && played === spins.length) { state.running = MAX_WIN; capped = true; await banner('MAXIMUM WIN REACHED', 0xffe066, 1500, 54); }
     await sleep(r.lines.length || Object.keys(r.cash).length ? 500 : 250);
   }
   clearLines(); lightsOff();
@@ -349,9 +376,16 @@ async function round(force = false) {
   }
   busy = true; resetBtn.visible = false; clearLines(); lightsOff();
   msg.text = ''; lastWin = 0;
-  if (!force) balance = Math.round((balance - st) * 100) / 100;   // demo bonus is free
+  const before = balance;
+  if (!force) balance = Math.round((balance - st) * 100) / 100;   // show the stake taken straight away (demo bonus is free)
   hud();
-  const base = E.spin('base', force);
+  let res;
+  try { res = await game.play(Math.round(st * 100), force); }   // the whole round is decided here, before the reels move
+  catch (e) {
+    balance = before; busy = false; msg.text = e.code === 'FUNDS' ? 'Not enough balance' : `Could not play: ${e.message}`; msg.style.fill = 0xff8080; hud();
+    return;
+  }
+  const base = res.round.base;
   await spinReels('base', base);
   let total = base.total, fsSpins = 0;
   if (base.lines.length) {
@@ -361,14 +395,13 @@ async function round(force = false) {
   let feature = null;
   if (base.trigger) {
     await sleep(500);
-    feature = await freeSpins(st, total);
-    total = feature.total; fsSpins = feature.played;
+    feature = await freeSpins(st, total, res.round.freeSpins, res.round.capped);
+    fsSpins = feature.played;
   }
-  total = Math.min(total, MAX_WIN);
-  const win = Math.round(total * st * 100) / 100;
+  const win = res.win / 100;          // the amount actually paid by the game server / wallet
   if (base.trigger || base.lines.length) await bigWin(win, st);   // big-win count-up comes before the feature summary
   if (feature) await endFeature(feature, win, st);
-  balance = Math.round((balance + win) * 100) / 100; lastWin = win;
+  balance = res.balance / 100; lastWin = win;
   if (win <= 0) { msg.text = 'No win'; msg.style.fill = 0x9fb7c2; }
   else if (win < st - 1e-9) { msg.text = `Returned ${money(win)}`; msg.style.fill = 0x9fb7c2; }
   else { msg.text = `WIN ${money(win)}`; msg.style.fill = 0xffe066; burst(W / 2, 591, 16, 0xffe066, { speed: 4, up: 3 }); }

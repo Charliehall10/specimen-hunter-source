@@ -1,7 +1,7 @@
 // Procedural artwork: every symbol, the lakeside scenes, reel frame and logo are drawn
 // with Canvas2D at start-up and turned into Pixi textures. No external image assets.
 import { Texture, CanvasSource } from 'pixi.js';
-import { W, H, CW, CH, REEL_W, REEL_H, FONT } from './config.js';
+import { W, H, CW, CH, REEL_W, REEL_H, FONT, GAME_NAME } from './config.js';
 
 export const ART_SCALE = 2;  // symbols are drawn at 2x and shown at 0.5 scale for crisp edges
 
@@ -388,13 +388,15 @@ export function makeFrameTexture() {
 export function makeLogoTexture() {
   const w = 760, h = 110, [c, ctx] = canvas(w, h, 2);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = `bold 78px ${FONT}`;
+  // shrink longer names so they always fit the logo width
+  let size = 78; ctx.font = `bold ${size}px ${FONT}`;
+  while (ctx.measureText(GAME_NAME.toUpperCase()).width > w - 40 && size > 30) { size -= 2; ctx.font = `bold ${size}px ${FONT}`; }
   shadow(ctx, 12, 5, 'rgba(0,0,0,0.7)');
-  ctx.lineWidth = 10; ctx.strokeStyle = '#2a1606'; ctx.lineJoin = 'round'; ctx.strokeText('FISH ON!', w / 2, 52);
+  ctx.lineWidth = 10; ctx.strokeStyle = '#2a1606'; ctx.lineJoin = 'round'; ctx.strokeText(GAME_NAME.toUpperCase(), w / 2, 52);
   noShadow(ctx);
   ctx.fillStyle = lin(ctx, 0, 22, 0, 82, [[0, '#fff6c8'], [0.45, '#f2c14e'], [0.55, '#d08a1a'], [1, '#ffdf7a']]);
-  ctx.fillText('FISH ON!', w / 2, 52);
-  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeText('FISH ON!', w / 2, 51);
+  ctx.fillText(GAME_NAME.toUpperCase(), w / 2, 52);
+  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeText(GAME_NAME.toUpperCase(), w / 2, 51);
   return Texture.from(c);
 }
 

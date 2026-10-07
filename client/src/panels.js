@@ -66,7 +66,7 @@ function rulesPage() {
   p.addChild(body([
     '• Return to player (design figure): 96.1%. This is a demo prototype; the figure has not been independently certified.',
     `• Total win per game round, including free spins, is capped at ${MAX_WIN.toLocaleString('en-GB')}× stake.`,
-    '• Stakes from £0.10 to £5.00. Use − / + or the arrow keys.',
+    '• Stakes from £0.10 up to £5.00 per spin, or £2.00 for players aged 18 to 24 (GB limits); your casino may set a lower maximum. Use − / + or the arrow keys.',
     `• Every spin lasts at least ${MIN_SPIN_MS / 1000} seconds. There is no autoplay, turbo or quick stop.`,
     '• Returns smaller than your stake are shown as returns, not as wins.',
     `• Your session time and net position are always on screen. A reality check appears every ${REALITY_CHECK_MIN} minutes.`,
