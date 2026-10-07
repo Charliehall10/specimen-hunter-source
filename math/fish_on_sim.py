@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-FISH ON! (formerly Specimen Hunter) - v0.1 math simulator
+FISH ON! - v0.1 math simulator
 5x3, 10 fixed paylines, "Three Rods" scatter (bite alarms, reels 2-4 only),
 free spins with simple fish-weight collect.
 
 Usage:
-    python specimen_hunter_sim.py --spins 50000000
-    python specimen_hunter_sim.py --theory          # exact strip maths, instant
-    python specimen_hunter_sim.py --export-strips   # writes strips.json
+    python fish_on_sim.py --spins 50000000
+    python fish_on_sim.py --theory          # exact strip maths, instant
+    python fish_on_sim.py --export-strips   # writes strips.json
 
 All wins are in multiples of TOTAL BET. Everything you tune lives in the
 CONFIG block. Change a number, re-run, read the report.

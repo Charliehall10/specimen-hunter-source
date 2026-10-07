@@ -84,7 +84,7 @@ Mean fish value: 3.052× stake.
 | Bite Alarm | 0 | 2 | 2 | 2 | 0 | 0 | 2 | 2 | 2 | 0 |
 | Specimen Fish | – | – | – | – | – | 4 | 4 | 4 | 4 | 4 |
 
-Full strips: `client/strips.json` (exported by `math/specimen_hunter_sim.py --export-strips`).
+Full strips: `client/strips.json` (exported by `math/fish_on_sim.py --export-strips`).
 
 ## Paylines (row per reel, 0 = top)
 

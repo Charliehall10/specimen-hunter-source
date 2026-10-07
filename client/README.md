@@ -17,7 +17,7 @@ Controls: Space / Enter spin, arrow keys change stake, I info, H history, N musi
 
 | File | What it does |
 |---|---|
-| `src/engine.js` | Game maths (JS port of `math/specimen_hunter_sim.py`). Decides every outcome. |
+| `src/engine.js` | Game maths (JS port of `math/fish_on_sim.py`). Decides every outcome. |
 | `strips.json` | Reel strips exported from the simulator. |
 | `src/main.js` | Game flow: rounds, free spins, win presentation, session tracking. |
 | `src/reels.js` | Scrolling reels with fixed stop times (no slam stop). |

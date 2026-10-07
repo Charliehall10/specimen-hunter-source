@@ -1,4 +1,4 @@
-// Fish On! engine: JS port of specimen_hunter_sim.py (prototype RNG = Math.random)
+// Fish On! engine: JS port of math/fish_on_sim.py (prototype RNG = Math.random)
 export const MAX_WIN = 5000;
 export const PAY = {
   FLOAT:[6,15,30], BOILIE:[6,15,30], CORN:[9,24,45], PELLET:[9,24,45],
