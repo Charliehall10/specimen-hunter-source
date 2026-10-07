@@ -1,6 +1,8 @@
-// Tiny WebAudio synth: all sounds are generated, no audio files.
+// Tiny WebAudio synth: sounds are generated, apart from the one recorded voice line.
 // Returns below stake never call win sounds (handled by the caller).
-let ctx = null, master = null, muted = false;
+// "Fish on!" voice: Piper TTS, en_GB northern_english_male (dataset: OpenSLR 83, CC-BY-SA 4.0).
+import fishOnUrl from './assets/fish-on.wav';
+let ctx = null, master = null, muted = false, fishOnBuf = null;
 
 export function initAudio() {
   if (ctx) { ctx.resume?.(); return; }
@@ -9,6 +11,13 @@ export function initAudio() {
   ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
   // Pause all audio while the window is hidden or minimised
   document.addEventListener('visibilitychange', () => { document.hidden ? ctx.suspend() : ctx.resume(); });
+  fetch(fishOnUrl).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(buf => { fishOnBuf = buf; })
+    .catch(() => {});   // voice is optional; the game plays fine without it
+}
+function playClip(buf, { vol = 1, at = 0 } = {}) {
+  if (!ctx || muted || !buf) return;
+  const s = ctx.createBufferSource(), g = ctx.createGain();
+  s.buffer = buf; g.gain.value = vol; s.connect(g); g.connect(master); s.start(ctx.currentTime + at);
 }
 export const isMuted = () => muted;
 export function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : 0.5; }
@@ -48,6 +57,8 @@ export const sfx = {
   record: () => { noise(0.8, { vol: 0.3, filter: 500, q: 0.4 }); [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.6, { type: 'triangle', vol: 0.2, at: 0.2 + i * 0.1 })); },
   bigWin: () => [392, 494, 587, 784, 988, 1175].forEach((f, i) => tone(f, 0.45, { type: 'triangle', vol: 0.2, at: i * 0.1 })),
   tally: () => tone(1200 + Math.random() * 400, 0.04, { type: 'sine', vol: 0.06 }),
+  // Third bite alarm: the angler's shout, just after the alarm beep
+  fishOn: () => { duckMusic(1200); playClip(fishOnBuf, { vol: 1.3, at: 0.18 }); },
 };
 
 // ---------------------------------------------------------------- background music

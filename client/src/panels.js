@@ -74,6 +74,7 @@ function rulesPage() {
     '• Malfunction voids all pays and plays.',
     '• Demo money only. This build uses a non-certified random number generator and is not for real-money play.',
     DEMO_BONUS ? '• DEMO BONUS starts the free spins at no cost. It exists only for demonstrations and is removed in release builds.' : '',
+    '• Credits: "Fish on!" voice made with Piper TTS (en_GB northern_english_male; dataset OpenSLR 83, CC-BY-SA 4.0).',
   ].filter(Boolean).join('\n'), 17, 960, -480, -230, 0xdbe7ec, 0));
   return p;
 }

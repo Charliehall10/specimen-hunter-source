@@ -217,7 +217,10 @@ async function spinReels(set, res) {
     const col = res.grid[r].map((sym, k) => ({ sym, fish: res.cash[r + ',' + k] ?? null }));
     return reel.spinTo(col, stops[r], t0, filler(set, r)).then(() => {
       sfx.reelStop(r);
-      if (r >= 1 && r <= 3 && res.alarmReels[r - 1]) { setLight(r - 1, true); sfx.alarm(alarms++); }
+      if (r >= 1 && r <= 3 && res.alarmReels[r - 1]) {
+        setLight(r - 1, true); sfx.alarm(alarms++);
+        if (alarms === 3) sfx.fishOn();   // third bite alarm: "Fish on!"
+      }
       if (r === 2 && tease) { sfx.anticipation(); glowOn = performance.now(); }
       if (r === 3) glowOn = 0;
     });
