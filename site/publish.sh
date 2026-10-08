@@ -2,7 +2,7 @@
 # Publish the portfolio site to GitHub Pages.
 #   bash site/publish.sh [repo-name]        (default repo name: specimen-hunter)
 # Needs the GitHub CLI logged in (gh auth login). Creates <you>/<repo-name> as a PUBLIC repo holding ONLY the
-# built site (landing page, playable demo, media) - never the source code, simulator or PAR sheet.
+# built site (landing page, playable demo, media). The source code lives in a separate repo.
 # Running it again updates the site with a normal commit (history is kept, nothing is force-pushed).
 set -euo pipefail
 REPO_NAME="${1:-specimen-hunter}"

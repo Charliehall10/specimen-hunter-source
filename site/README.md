@@ -56,7 +56,7 @@ Backed by a full **PAR sheet**: exact strip maths, cross-checked against a 50-mi
 
 ## About this repository
 
-This repository hosts the **public demo site** only: the landing page, the playable demo (`play/`) and media. The full source code, maths simulator and PAR sheet are private and available to studios on request.
+This repository hosts the **public demo site**: the landing page, the playable demo (`play/`) and media. The full source code, maths simulator and PAR sheet are in [specimen-hunter-source](https://github.com/Charliehall10/specimen-hunter-source).
 
 ## Status and contact
 
