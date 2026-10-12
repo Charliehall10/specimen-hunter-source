@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeEngine, cryptoRand, PAY, PAYLINES, MAX_WIN } from './engine.js';
+import { makeEngine, cryptoRand, PAY, PAYLINES, MAX_WIN, FISH, SWIM_COUNT, swimMult } from './engine.js';
 
 const strips = JSON.parse(fs.readFileSync(new URL('../strips.json', import.meta.url)));
 function mulberry32(a) {
@@ -31,7 +31,7 @@ test('every reported line matches the grid and pays the table value', () => {
       assert.equal(l.units, PAY[l.sym][l.count - 3]);
       units += l.units;
     }
-    const cash = Object.values(r.cash).reduce((a, f) => a + f[1], 0);
+    const cash = Object.values(r.cash).reduce((a, f) => a + f.value * f.mult, 0);
     assert.ok(Math.abs(r.total - (units / 10 + cash)) < 1e-9);
   }
 });
@@ -66,6 +66,58 @@ test('playRoundDetailed matches playRound exactly for the same random sequence',
     }
   }
   assert.ok(features > 1000);
+});
+
+test('swims: on different reels, fixed for the feature, multipliers double with each catch', () => {
+  const E = makeEngine(strips, mulberry32(21));
+  const prizes = new Map(FISH.map(f => [f[0], f[1]]));
+  let features = 0, caught = 0, deep = 0;
+  for (let i = 0; i < 4000; i++) {
+    const d = E.playRoundDetailed(true);
+    features++;
+    assert.equal(d.swims.length, SWIM_COUNT);
+    assert.equal(new Set(d.swims.map(w => w.reel)).size, SWIM_COUNT);
+    d.swims.forEach(w => { assert.ok(w.row >= 0 && w.row <= 2); assert.equal(w.catches, 0); });
+    const catches = d.swims.map(() => 0);
+    let sum = d.base.total;
+    for (const fsr of d.freeSpins) {
+      let units = 0;
+      for (const l of fsr.lines) units += l.units;
+      let cash = 0;
+      for (const [key, f] of Object.entries(fsr.cash)) {
+        const [r, k] = key.split(',').map(Number);
+        assert.equal(f.value, prizes.get(f.label));
+        const swim = d.swims.findIndex(w => w.reel === r && w.row === k);
+        assert.equal(f.swim, swim);
+        if (swim >= 0) { assert.equal(f.mult, swimMult(catches[swim])); catches[swim]++; caught++; }
+        else assert.equal(f.mult, 1);
+        cash += f.value * f.mult;
+      }
+      assert.ok(Math.abs(fsr.total - (units / 10 + cash)) < 1e-9);
+      assert.deepEqual(fsr.swims.map(w => [w.reel, w.row]), d.swims.map(w => [w.reel, w.row]));
+      assert.deepEqual(fsr.swims.map(w => w.catches), catches);
+      sum += fsr.total;
+    }
+    if (Math.max(...catches) >= 3) deep++;
+    assert.ok(Math.abs(Math.min(sum, MAX_WIN) - d.total) < 1e-9);
+  }
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 9].map(swimMult), [2, 4, 8, 16, 32, 32, 32]);
+  assert.ok(caught > features * 2 && deep > 50, `caught ${caught}, deep ${deep}`);
+});
+
+test('a round that reaches the 5,000x cap stops there and pays exactly the cap', () => {
+  const E = makeEngine(strips, mulberry32(21));   // this seed reaches the cap within a few thousand features
+  let d = null;
+  for (let i = 0; i < 5000 && !d; i++) { const r = E.playRoundDetailed(true); if (r.capped) d = r; }
+  assert.ok(d, 'no capped round found');
+  assert.equal(d.total, MAX_WIN);
+  const totals = d.freeSpins.reduce((acc, r) => [...acc, acc[acc.length - 1] + r.total], [d.base.total]);
+  assert.ok(totals[totals.length - 1] >= MAX_WIN && totals[totals.length - 2] < MAX_WIN, 'the feature ends on the spin that reaches the cap');
+});
+
+test('base game rounds carry no swims', () => {
+  const E = makeEngine(strips, mulberry32(4));
+  for (let i = 0; i < 20000; i++) { const d = E.playRoundDetailed(); if (!d.freeSpins.length) assert.equal(d.swims, null); }
 });
 
 test('cryptoRand is uniform-looking in [0, 1)', () => {

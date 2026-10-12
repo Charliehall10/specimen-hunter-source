@@ -2,11 +2,12 @@
 // gameClient.js) before the reels move; this file only presents them.
 import { Application, Container, Graphics, Sprite } from 'pixi.js';
 import strips from '../strips.json';
-import { MAX_WIN, FISH, PAYLINES as PAYLINE_ROWS } from './engine.js';
+import { MAX_WIN, FISH, PAYLINES as PAYLINE_ROWS, swimMult } from './engine.js';
 import { connect, launchProfile } from './gameClient.js';
 import { W, H, CW, CH, GAP, X0, Y0, REEL_W, REEL_H, STOP_AT, ANTICIPATION_MS, START_BALANCE,
   REALITY_CHECK_MIN, DEMO_BONUS, LINE_COLOURS, BIG_WINS, SYMBOLS, GAME_NAME, money, sleep } from './config.js';
-import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture, getArtScale } from './art.js';
+import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture, makeSwimPatchTexture, makeMarkerTexture,
+  getArtScale } from './art.js';
 import { Reel, tween, tickTweens } from './reels.js';
 import { initAudio, sfx, isMuted, setMuted, isMusicOn, setMusic, setMood, duckMusic } from './audio.js';
 import { label, Button, SpinButton, valueBox, Modal } from './ui.js';
@@ -43,12 +44,15 @@ const logoSp = new Sprite(logo); logoSp.anchor.set(0.5); logoSp.scale.set(0.42);
 
 const { texture: frameTex, pad } = makeFrameTexture();
 const frame = new Sprite(frameTex); frame.position.set(X0 - pad, Y0 - pad); root.addChild(frame);
+const swimUnder = new Container(); root.addChild(swimUnder);   // baited swim patches, under the symbols
 
 let stakeIdx = Math.max(0, STAKES.indexOf(1) >= 0 ? STAKES.indexOf(1) : STAKES.length - 1);   // start at £1.00 if allowed
 const stake = () => STAKES[stakeIdx];
-const fishLabel = f => [f[0], money(f[1] * stake())];
+// A fish shows its weight and prize; once a swim has multiplied it, the multiplied prize
+const fishLabel = f => [f.label, money(f.value * (f.shown ?? 1) * stake())];
 const reels = Array.from({ length: 5 }, (_, r) => new Reel(r, tex, fishLabel));
 reels.forEach(r => root.addChild(r.view));
+const swimOver = new Container(); root.addChild(swimOver);     // swim rings, marker floats and multipliers
 
 // Redraw the symbols at exactly their on-screen pixel size whenever the game's size changes
 // (rotation, resizing), so the GPU never has to shrink or stretch them.
@@ -86,20 +90,32 @@ lightsOff();
 
 // Side panels
 const side = new Container(); root.addChild(side);
-const leftInfo = new Container(); leftInfo.position.set(95, 250); side.addChild(leftInfo);
-leftInfo.addChild(new Graphics().roundRect(-80, -70, 160, 150, 14).fill({ color: 0x04121a, alpha: 0.7 }).stroke({ width: 2, color: 0xff6b6b, alpha: 0.6 }));
-leftInfo.addChild(label('THREE RODS', 17, 0xff8080, { x: 0, y: -48 }));
-leftInfo.addChild(label('A bite alarm on\nreels 2, 3 & 4\nwins\n10 FREE SPINS', 14, 0xffffff, { x: 0, y: 14, style: { fontWeight: 'normal' }, stroke: { width: 0 }, lineHeight: 20 }));
+const leftInfo = new Container(); leftInfo.position.set(95, 262); side.addChild(leftInfo);
+leftInfo.addChild(new Graphics().roundRect(-80, -98, 160, 196, 14).fill({ color: 0x04121a, alpha: 0.7 }).stroke({ width: 2, color: 0xff6b6b, alpha: 0.6 }));
+leftInfo.addChild(label('THREE RODS', 17, 0xff8080, { x: 0, y: -76 }));
+leftInfo.addChild(label('A bite alarm on\nreels 2, 3 & 4 wins\n10 FREE SPINS', 14, 0xffffff, { x: 0, y: -30, style: { fontWeight: 'normal' }, stroke: { width: 0 }, lineHeight: 19 }));
+leftInfo.addChild(label('3 BAITED SWIMS', 14, 0xffd36a, { x: 0, y: 18 }));
+leftInfo.addChild(label('Fish caught in a swim\npay ×2, then ×4, ×8,\n×16 and up to ×32', 13, 0xdbe7ec, { x: 0, y: 58, style: { fontWeight: 'normal' }, stroke: { width: 0 }, lineHeight: 18 }));
 
 const featPanel = new Container(); featPanel.position.set(1185, 300); featPanel.visible = false; side.addChild(featPanel);
-featPanel.addChild(new Graphics().roundRect(-82, -150, 164, 300, 16).fill({ color: 0x04121a, alpha: 0.82 }).stroke({ width: 3, color: 0xf2c14e }));
-featPanel.addChild(label('FREE SPINS', 16, 0xf2c14e, { x: 0, y: -126 }));
-const fsCount = label('', 34, 0xffffff, { x: 0, y: -86 }); featPanel.addChild(fsCount);
-featPanel.addChild(label('FISH LANDED', 13, 0x9fb7c2, { x: 0, y: -36 }));
-const fishCount = label('0', 26, 0xffffff, { x: 0, y: -8 }); featPanel.addChild(fishCount);
-featPanel.addChild(label('TOTAL WIN', 13, 0x9fb7c2, { x: 0, y: 46 }));
-const meter = label('£0.00', 26, 0xffe066, { x: 0, y: 78 }); featPanel.addChild(meter);
-const meterPos = { x: 1185, y: 378 };
+featPanel.addChild(new Graphics().roundRect(-82, -172, 164, 344, 16).fill({ color: 0x04121a, alpha: 0.84 }).stroke({ width: 3, color: 0xf2c14e }));
+featPanel.addChild(label('FREE SPINS', 16, 0xf2c14e, { x: 0, y: -150 }));
+const fsCount = label('', 32, 0xffffff, { x: 0, y: -114 }); featPanel.addChild(fsCount);
+featPanel.addChild(label('SWIMS', 13, 0xffd36a, { x: 0, y: -78 }));
+const markerTex = makeMarkerTexture();
+// one row per swim, left to right as on the reels: next multiplier and what the swim has paid so far
+const swimRows = [0, 1, 2].map(i => {
+  const row = new Container(); row.position.set(0, -46 + i * 40); featPanel.addChild(row);
+  row.addChild(new Graphics().roundRect(-72, -17, 144, 34, 9).fill({ color: 0x0b2a38, alpha: 0.95 }).stroke({ width: 1, color: 0x2f5d70 }));
+  const m = new Sprite(markerTex); m.anchor.set(0.5, 0.5); m.scale.set(0.42); m.position.set(-60, -2);
+  const mult = label('×2', 19, 0xffe066, { x: -26, y: 0 });
+  const won = label('£0.00', 15, 0xffffff, { x: 34, y: 0 });
+  row.addChild(m, mult, won); return { row, mult, won };
+});
+featPanel.addChild(label('TOTAL WIN', 13, 0x9fb7c2, { x: 0, y: 84 }));
+const meter = label('£0.00', 26, 0xffe066, { x: 0, y: 114 }); featPanel.addChild(meter);
+const fishCount = label('', 12, 0x9fb7c2, { x: 0, y: 150, stroke: { width: 0 } }); featPanel.addChild(fishCount);
+const meterPos = { x: 1185, y: 414 };
 
 // Messages + HUD
 const msg = label('', 28, 0xffffff, { x: W / 2, y: 591 }); root.addChild(msg);
@@ -203,10 +219,11 @@ function tickParticles(now, dt) {
     if (age > p.life) { p.destroy(); particles.splice(i, 1); }
   }
 }
+const backOut = k => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;   // overshoots a little, then settles
 async function banner(text, colour = 0xf2c14e, ms = 1600, size = 64) {
   const t = label(text, size, colour, { x: W / 2, y: Y0 + REEL_H / 2, stroke: { color: 0x1a0d00, width: 10 } });
   t.scale.set(0.3); root.addChild(t);
-  await tween(350, k => { t.scale.set(0.3 + 0.7 * k); }, k => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2);
+  await tween(350, k => { t.scale.set(0.3 + 0.7 * k); }, backOut);
   await sleep(ms);
   await tween(250, k => { t.alpha = 1 - k; });
   t.destroy();
@@ -245,7 +262,7 @@ function tickIdle(now) {
 
 // ------------------------------------------------------------------ spinning
 const NAMES = Object.fromEntries(Object.entries(SYMBOLS).map(([k, v]) => [k, v.name]));
-const cheapFish = () => FISH[Math.floor(Math.random() * 6)];
+const cheapFish = () => { const [label, value] = FISH[Math.floor(Math.random() * 6)]; return { label, value, swim: -1, mult: 1 }; };
 const filler = (set, r) => () => {
   const s = (set === 'fs' ? strips.free_spins : strips.base)[r];
   const sym = s[Math.floor(Math.random() * s.length)];
@@ -282,36 +299,130 @@ function tickGlow(now) {
 }
 
 // ------------------------------------------------------------------ feature
+// Baited swims: a lit patch under the symbols, a glowing ring, a marker float and a multiplier badge on top
+let swims = [], featStake = 0, patchTex = null, patchScale = 0;
+function makeSwim(w, patchTex) {
+  const c = reels[w.reel].cellCentre(w.row);
+  const patch = new Sprite(patchTex); patch.anchor.set(0.5); patch.scale.set(1 / getArtScale()); patch.position.set(c.x, c.y); patch.alpha = 0;
+  swimUnder.addChild(patch);
+  const ring = new Graphics(); ring.position.set(c.x, c.y); ring.alpha = 0;
+  const marker = new Sprite(markerTex); marker.anchor.set(0.5, 0.85); marker.scale.set(0); marker.position.set(c.x - CW / 2 + 18, c.y - CH / 2 + 26);
+  const badge = new Container(); badge.position.set(c.x + CW / 2 - 24, c.y - CH / 2 + 22); badge.scale.set(0);
+  badge.addChild(new Graphics().circle(0, 2, 23).fill({ color: 0x000000, alpha: 0.5 }).circle(0, 0, 23).fill(0xf2c14e).stroke({ width: 3, color: 0x3a1a00 })
+    .circle(0, -3, 17).fill({ color: 0xfff3c0, alpha: 0.45 }));
+  const badgeText = label(`×${swimMult(w.catches)}`, 18, 0x3a1a00, { x: 0, y: 1, stroke: { width: 0 } });
+  badge.addChild(badgeText);
+  swimOver.addChild(ring, marker, badge);
+  return { ...w, won: 0, best: 0, patch, ring, marker, badge, badgeText, flash: 0 };
+}
+function tickSwims(now) {
+  swims.forEach((s, i) => {
+    const glowA = 0.5 + 0.25 * Math.sin(now / 320 + i * 2);
+    s.ring.clear()
+      .roundRect(-CW / 2 - 1, -CH / 2 - 1, CW + 2, CH + 2, 18).stroke({ width: 12, color: 0xff9a1a, alpha: 0.22 + 0.1 * glowA + s.flash * 0.5 })
+      .roundRect(-CW / 2 + 2, -CH / 2 + 2, CW - 4, CH - 4, 16).stroke({ width: 4, color: s.flash > 0.05 ? 0xffffff : 0xffc04d, alpha: 0.45 + glowA * 0.6 + s.flash * 0.5 });
+    s.flash = Math.max(0, s.flash - 0.03);
+  });
+}
+function updateSwimRows() {
+  swimRows.forEach((r, i) => {
+    const s = swims[i];
+    r.row.visible = !!s;
+    if (s) { r.mult.text = `×${swimMult(s.catches)}`; r.won.text = money(s.won * featStake); }
+  });
+}
+function clearSwims() {
+  const old = [...swimUnder.children, ...swimOver.children];
+  tween(400, k => old.forEach(o => { o.alpha = Math.min(o.alpha, 1 - k); })).then(() => old.forEach(o => o.destroy({ children: true })));
+  swims = [];
+}
+
+// Before the first free spin the three rods each cast a spod of bait into a swim
+async function baitSwims(list) {
+  if (patchScale !== getArtScale()) { patchTex?.destroy(true); patchTex = makeSwimPatchTexture(); patchScale = getArtScale(); }
+  swims = list.map(w => makeSwim(w, patchTex));
+  updateSwimRows();
+  msg.text = 'Baiting three swims'; msg.style.fill = 0xffd36a;
+  for (const [i, s] of swims.entries()) {
+    const from = { x: lights[i].x, y: lights[i].y }, to = reels[s.reel].cellCentre(s.row);
+    setLight(i, true); sfx.cast();
+    const spod = new Graphics().ellipse(0, 0, 13, 6).fill(0xff8c1a).stroke({ width: 2, color: 0x2a1200 })
+      .poly([8, -5, 17, -10, 17, 10, 8, 5]).fill(0xfff3d6).stroke({ width: 1.5, color: 0x2a1200 });
+    fxLayer.addChild(spod);
+    let px = from.x, py = from.y;
+    await tween(620, t => {
+      const x = from.x + (to.x - from.x) * t, y = from.y + (to.y - from.y) * t - Math.sin(t * Math.PI) * 150;
+      spod.position.set(x, y); spod.rotation = Math.atan2(y - py, x - px) + Math.PI; px = x; py = y;
+    }, t => t);
+    spod.destroy();
+    sfx.splash();
+    burst(to.x, to.y, 28, 0xcfefff, { speed: 6, up: 5, life: 800 }); burst(to.x, to.y, 12, 0xffc04d, { speed: 3, up: 2, life: 900 });
+    s.flash = 1;
+    tween(450, t => { s.patch.alpha = t; s.ring.alpha = t; });
+    tween(380, t => s.marker.scale.set(t * 0.82), backOut);
+    tween(380, t => s.badge.scale.set(t), backOut);
+    setLight(i, false);
+    await sleep(160);
+  }
+  await sleep(450);
+  msg.text = '';
+}
+
 async function collectFish(res, st, state) {
   const keys = Object.keys(res.cash).sort((a, b) => a.split(',')[0] - b.split(',')[0] || a.split(',')[1] - b.split(',')[1]);
   let i = 0;
   for (const key of keys) {
     const [r, k] = key.split(',').map(Number), f = res.cash[key];
-    const slot = reels[r].slotAt(k), c = reels[r].cellCentre(k);
-    const record = f[1] >= 250;
+    const slot = reels[r].slotAt(k), c = reels[r].cellCentre(k), sw = f.swim >= 0 ? swims[f.swim] : null;
+    const record = f.value >= 250;
     await tween(260, t => slot.view.scale.set(1 + 0.18 * Math.sin(t * Math.PI)), t => t);
     burst(c.x, c.y, record ? 40 : 12, 0xbfe8ff, { speed: 5, up: 3 });
     sfx.collect(i++);
-    if (record) { sfx.record(); await banner(`RECORD FISH!\n${f[0]}`, 0xffe066, 1400, 56); }
-    const fly = label(money(f[1] * st), 26, 0xffe066, { x: c.x, y: c.y + 40, stroke: { color: 0x2a1a00, width: 5 } });
-    root.addChild(fly);
+    if (record) { sfx.record(); await banner(`RECORD FISH!\n${f.label}`, 0xffe066, 1400, 56); }
+    const pay = f.value * f.mult;
+    if (sw) {
+      // caught in a swim: the multiplier lands on the fish and its prize counts up
+      sw.flash = 1; sfx.swimCatch(sw.catches);
+      const pop = label(`×${f.mult}`, 58, 0xffe066, { x: c.x, y: c.y - 8, stroke: { color: 0x3a1a00, width: 9 } });
+      pop.scale.set(0.2); fxLayer.addChild(pop);
+      burst(c.x, c.y, 24, 0xffd36a, { speed: 6, up: 4, life: 900 });
+      await tween(320, t => pop.scale.set(0.2 + 0.85 * t), backOut);
+      await tween(560, t => { slot.value.text = money(f.value * st * (1 + (f.mult - 1) * t)); slot.value.scale.set(1 + 0.25 * Math.sin(t * Math.PI)); });
+      f.shown = f.mult;
+      await tween(220, t => { pop.alpha = 1 - t; pop.scale.set(1.05 + 0.4 * t); });
+      pop.destroy();
+      sw.catches++; sw.won += pay; sw.best = Math.max(sw.best, f.mult); state.swimFish++;
+      // the swim's multiplier doubles for the next fish
+      sw.badgeText.text = `×${swimMult(sw.catches)}`; sfx.multUp(sw.catches);
+      burst(sw.badge.x, sw.badge.y, 14, 0xffe066, { speed: 4, up: 3, life: 700 });
+      tween(450, t => sw.badge.scale.set(1 + 0.6 * Math.sin(t * Math.PI)), t => t);
+      updateSwimRows();
+    }
+    const fly = label(money(pay * st), 26, 0xffe066, { x: c.x, y: c.y + 40, stroke: { color: 0x2a1a00, width: 5 } });
+    fxLayer.addChild(fly);
     await tween(420, t => { fly.position.set(c.x + (meterPos.x - c.x) * t, c.y + 40 + (meterPos.y - c.y - 40) * t - Math.sin(t * Math.PI) * 60); fly.scale.set(1 - 0.3 * t); },
       t => t * t * (3 - 2 * t));
     fly.destroy();
-    state.running += f[1]; state.fish++;
-    meter.text = money(Math.min(state.running, MAX_WIN) * st); fishCount.text = String(state.fish);
+    state.running += pay; state.fish++;
+    meter.text = money(Math.min(state.running, MAX_WIN) * st); fishCount.text = fishText(state);
     burst(meterPos.x, meterPos.y, 8, 0xffe066, { speed: 3, up: 2, life: 600 });
   }
+  // the round result is the authority on swim state
+  res.swims?.forEach((w, j) => { if (swims[j] && swims[j].catches !== w.catches) { swims[j].catches = w.catches; swims[j].badgeText.text = `×${swimMult(w.catches)}`; } });
 }
+const fishText = s => `${s.fish} fish landed · ${s.swimFish} in swims`;
 
-async function freeSpins(st, running, spins, cappedRound) {
+async function freeSpins(st, running, spins, cappedRound, baited) {
   sfx.feature(); setMood('feature'); duckMusic(2200);
   lightsOff(); clearLines();
   await banner('THREE RODS!', 0xff6b6b, 900, 76);
   await banner('10 FREE SPINS', 0xf2c14e, 900, 70);
   tween(1200, k => { dusk.alpha = k; });
-  const state = { running, fish: 0 };
-  featPanel.visible = true; leftInfo.visible = false; meter.text = money(running * st); fishCount.text = '0';
+  const state = { running, fish: 0, swimFish: 0 };
+  featStake = st;
+  featPanel.visible = true; leftInfo.visible = false; meter.text = money(running * st); fishCount.text = fishText(state);
+  fsCount.text = `0 / ${spins.length ? 10 : 0}`;
+  await baitSwims(baited);
   let played = 0, capped = false;
   for (const r of spins) {            // spins were decided before the round started; just play them back
     clearLines(); lightsOff();
@@ -329,24 +440,28 @@ async function freeSpins(st, running, spins, cappedRound) {
     await sleep(r.lines.length || Object.keys(r.cash).length ? 500 : 250);
   }
   clearLines(); lightsOff();
-  return { total: state.running, played, fish: state.fish, capped };
+  const best = Math.max(0, ...swims.map(s => s.best));
+  return { total: state.running, played, fish: state.fish, swimFish: state.swimFish, best, capped };
 }
 
 // Runs after any big-win count-up: feature summary, then back to the dawn scene
 async function endFeature(f, win, st) {
   setMood('base');
-  await summary(f.played, f.fish, win, win >= st, f.capped);
+  await summary(f, win, win >= st);
   tween(1200, k => { dusk.alpha = 1 - k; });
+  clearSwims();
   featPanel.visible = false; leftInfo.visible = true;
 }
 
-function summary(spins, fish, win, celebrate, capped) {
+function summary(f, win, celebrate) {
   return new Promise(res => {
-    const m = modal(new Modal(560, 300, 'FEATURE COMPLETE', { closable: false }));
-    m.body.addChild(label(`${spins} free spins · ${fish} fish landed${capped ? '\nMaximum win reached' : ''}`, 20, 0xdbe7ec, { x: 0, y: -40, stroke: { width: 0 } }));
-    m.body.addChild(label(celebrate ? `TOTAL WIN ${money(win)}` : `Total returned ${money(win)}`, celebrate ? 40 : 28, celebrate ? 0xffe066 : 0xdbe7ec, { x: 0, y: 20 }));
+    const m = modal(new Modal(600, 320, 'FEATURE COMPLETE', { closable: false }));
+    const swimLine = f.swimFish ? `${f.swimFish} caught in swims · best multiplier ×${f.best}` : 'No fish caught in the swims this time';
+    m.body.addChild(label(`${f.played} free spins · ${f.fish} fish landed\n${swimLine}${f.capped ? '\nMaximum win reached' : ''}`, 19, 0xdbe7ec,
+      { x: 0, y: -48, stroke: { width: 0 }, lineHeight: 28 }));
+    m.body.addChild(label(celebrate ? `TOTAL WIN ${money(win)}` : `Total returned ${money(win)}`, celebrate ? 40 : 28, celebrate ? 0xffe066 : 0xdbe7ec, { x: 0, y: 28 }));
     const b = new Button('CONTINUE', 200, 52, () => { clearTimeout(timer); m.close(); modalClosed(); res(); });
-    b.position.set(0, 100); m.panel.addChild(b); root.addChild(m);
+    b.position.set(0, 110); m.panel.addChild(b); root.addChild(m);
     const timer = setTimeout(() => { if (!m.destroyed) { m.close(); modalClosed(); res(); } }, 6000);
   });
 }
@@ -410,7 +525,7 @@ async function round(force = false) {
   let feature = null;
   if (base.trigger) {
     await sleep(500);
-    feature = await freeSpins(st, total, res.round.freeSpins, res.round.capped);
+    feature = await freeSpins(st, total, res.round.freeSpins, res.round.capped, res.round.swims);
     fsSpins = feature.played;
   }
   const win = res.win / 100;          // the amount actually paid by the game server / wallet
@@ -459,7 +574,7 @@ let last = performance.now();
 app.ticker.add(() => {
   const now = performance.now(), dt = Math.min(3, (now - last) / 16.67); last = now;
   reels.forEach(r => r.update(now));
-  tickTweens(now); tickParticles(now, dt); tickGlow(now); tickIdle(now);
+  tickTweens(now); tickParticles(now, dt); tickGlow(now); tickIdle(now); tickSwims(now);
   spinBtn.update(now);
   mist.x = Math.sin(now / 9000) * 60; mist.alpha = 0.7 + 0.3 * Math.sin(now / 4000);
 });

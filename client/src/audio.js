@@ -48,6 +48,10 @@ export const sfx = {
   record: () => { noise(0.8, { vol: 0.3, filter: 500, q: 0.4 }); [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.6, { type: 'triangle', vol: 0.2, at: 0.2 + i * 0.1 })); },
   bigWin: () => [392, 494, 587, 784, 988, 1175].forEach((f, i) => tone(f, 0.45, { type: 'triangle', vol: 0.2, at: i * 0.1 })),
   tally: () => tone(1200 + Math.random() * 400, 0.04, { type: 'sine', vol: 0.06 }),
+  // Baited swims: the spod whooshing out, a fish caught in a swim, the swim multiplier stepping up
+  cast: () => { noise(0.5, { vol: 0.16, filter: 1600, q: 0.6 }); tone(1900, 0.4, { type: 'sine', vol: 0.05, slideTo: 500 }); },
+  swimCatch: level => [659, 831, 988, 1319].forEach((f, i) => tone(f * 2 ** (Math.min(level, 4) * 2 / 12), 0.32, { type: 'triangle', vol: 0.16, at: i * 0.055 })),
+  multUp: level => [0, 4, 7, 12].forEach((st, i) => tone(523 * 2 ** ((st + Math.min(level, 5) * 2) / 12), 0.16, { type: 'square', vol: 0.06, at: 0.05 + i * 0.05 })),
 };
 
 // ---------------------------------------------------------------- background music

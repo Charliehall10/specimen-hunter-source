@@ -173,11 +173,43 @@ put(fv, 6 + n, 1, 'Mean fish value', bold=True); put(fv, 6 + n, 5, f'=SUM(E5:E{4
 note(fv, 8 + n, 'Source: FISH table in client/src/engine.js. Record fish: 52lb 0oz (250x) and 64lb 8oz (1,000x).')
 widths(fv, [14, 15, 13, 13, 20, 12])
 
+# ------------------------------------------------------------------ Baited swims
+X = D['exact']
+sw = wb.create_sheet('Baited Swims')
+sw['A1'] = 'Baited swims (free spins collect multiplier)'; sw['A1'].font = f_title
+note(sw, 2, f"Before the first free spin {X['swimCount']} swims are baited on {X['swimCount']} different reels (random row on each) and stay put for the feature. "
+            'A fish landing in a swim pays its prize x the swim multiplier, then the multiplier steps up.')
+header(sw, 4, ['Catch in a swim', 'Multiplier'])
+L = len(X['swimLadder'])
+for i, m in enumerate(X['swimLadder']):
+    put(sw, 5 + i, 1, f'{i + 1}' + (' and on' if i == L - 1 else '')); put(sw, 5 + i, 2, m, f_in, '"x"0')
+LAD = f"$B$5:$B${4 + L}"
+r0 = 7 + L
+note(sw, r0 - 1, 'Chance of n catches in one swim over a whole feature: exact, from math/par_sheet.mjs (joint chance of a fish in the swim and a '
+                 'retrigger on each spin, stepped through every possible feature; averaged over all 15 cells).')
+header(sw, r0, ['Catches n', 'P(n catches)', 'Multipliers paid for n catches', 'P x multipliers'])
+dist = X['swimCatchDistribution']
+last = max(i for i, v in enumerate(dist) if v > 1e-15)
+for n in range(last + 1):
+    r = r0 + 1 + n
+    put(sw, r, 1, n, f_calc, INT); put(sw, r, 2, dist[n], f_in, '0.000000000')
+    put(sw, r, 3, 0 if n == 0 else f'=C{r - 1}+INDEX({LAD},MIN(A{r},{L}))', f_calc, '#,##0')
+    put(sw, r, 4, f'=B{r}*C{r}', f_calc, '0.000000')
+end = r0 + 1 + last
+put(sw, end + 2, 1, 'Total probability (should be 1)'); put(sw, end + 2, 2, f'=SUM(B{r0 + 1}:B{end})', f_calc, '0.000000000')
+put(sw, end + 3, 1, 'Expected catches per swim'); put(sw, end + 3, 2, f'=SUMPRODUCT(A{r0 + 1}:A{end},B{r0 + 1}:B{end})', f_calc, '0.000000')
+put(sw, end + 4, 1, 'Expected multipliers paid per swim', bold=True); put(sw, end + 4, 2, f'=SUM(D{r0 + 1}:D{end})', f_calc, '0.000000', bold=True)
+SWIM_CATCH = f"'Baited Swims'!$B${end + 3}"
+SWIM_MULT = f"'Baited Swims'!$B${end + 4}"
+note(sw, end + 6, 'Cross-check: expected catches per swim must equal expected free spins x chance of a fish in one swim per spin (see Free Spins Feature).')
+widths(sw, [34, 16, 30, 16])
+
 # ------------------------------------------------------------------ Feature
 fe = wb.create_sheet('Free Spins Feature')
 fe['A1'] = 'Three Rods free spins'; fe['A1'].font = f_title
 note(fe, 2, 'Trigger: a Bite Alarm visible on each of reels 2, 3 and 4 (any row). 10 free spins; 3 alarms in free spins add 5 more.')
 header(fe, 4, ['Item', 'Value', 'Notes'])
+CASH_ROW = 4 + 2 + len(SYMS) + 2 + 1 + 1 + SYMS.index('CASH')
 rows = [
     ('P(alarm visible) reel 2, base', D['alarmVisible']['base'][1], f_in, PROB, 'Share of stops whose 3-row window contains an alarm (from strips.json)'),
     ('P(alarm visible) reel 3, base', D['alarmVisible']['base'][2], f_in, PROB, ''),
@@ -189,17 +221,22 @@ rows = [
     ('P(alarm visible) reel 4, free spins', D['alarmVisible']['free_spins'][3], f_in, PROB, ''),
     ('P(retrigger) per free spin', '=B10*B11*B12', f_calc, PROB, ''),
     ('Expected free spins per feature', '=10/(1-5*B13)', f_calc, '0.000', 'Each spin adds 5 x P(retrigger) spins on average: 10 / (1 - 5q)'),
-    ('Expected Specimen Fish per free spin', "=3*SUM('Reel Strips'!H{0}:L{0})".format(4 + 2 + len(SYMS) + 2 + 1 + 1 + SYMS.index('CASH')), f_calc, '0.0000', '3 visible rows x P(cash) summed over reels'),
+    ('Expected Specimen Fish per free spin', f"=3*SUM('Reel Strips'!H{CASH_ROW}:L{CASH_ROW})", f_calc, '0.0000', '3 visible rows x P(cash) summed over reels'),
+    ('Expected fish in swims per free spin', f"={X['swimCount']}*AVERAGE('Reel Strips'!H{CASH_ROW}:L{CASH_ROW})", f_calc, '0.0000', 'Each swim is equally likely to be on any reel'),
+    ('Expected fish outside swims per free spin', '=B15-B16', f_calc, '0.0000', 'Paid at x1'),
     ('Mean fish value', '=' + FISH_MEAN, f_link, '0.0000"x"', 'From Fish Values'),
     ('Free-spin line RTP per spin', f"='Line Wins Free Spins'!E{fs_total_row}", f_link, '0.0000"x"', 'From Line Wins Free Spins'),
-    ('Expected win per free spin', '=B17+B15*B16', f_calc, '0.0000"x"', 'Line wins + fish collected'),
-    ('Expected feature win (uncapped)', '=B14*B18', f_calc, '0.00"x"', 'Ignores the 5,000x cap (never reached in simulation)'),
-    ('Feature RTP contribution', '=B8*B19', f_calc, PCT, 'P(trigger) x expected feature win'),
+    ('Expected win per free spin, outside swims', '=B19+B17*B18', f_calc, '0.0000"x"', 'Line wins + fish outside the swims'),
+    ('Expected multipliers paid per swim', '=' + SWIM_MULT, f_link, '0.0000', 'From Baited Swims (exact)'),
+    ('Expected swim win per feature', f"={X['swimCount']}*B21*B18", f_calc, '0.00"x"', 'Swims x multipliers per swim x mean fish (fish value is independent of the swim)'),
+    ('Expected feature win (uncapped)', '=B14*B20+B22', f_calc, '0.00"x"', 'Ignores the 5,000x cap (see Summary for how often it is reached)'),
+    ('Feature RTP contribution', '=B8*B23', f_calc, PCT, 'P(trigger) x expected feature win'),
+    ('Check: catches per swim (spins x chance)', f"=B14*B16/{X['swimCount']}-{SWIM_CATCH}", f_calc, '0.0E+00', 'Should be ~0: links the DP in Baited Swims to the strips'),
 ]
 for i, (lab, val, font, fmt, nt) in enumerate(rows):
     r = 5 + i
     put(fe, r, 1, lab); put(fe, r, 2, val, font, fmt); note(fe, r, nt, 3)
-widths(fe, [38, 16, 80])
+widths(fe, [42, 16, 84])
 
 # ------------------------------------------------------------------ Win distribution (simulation)
 S = D['simulation']
@@ -239,31 +276,41 @@ sm['A1'] = 'Specimen Hunter - PAR sheet (probability accounting report)'; sm['A1
 note(sm, 2, f"{D['version']} | 5x3, 10 fixed lines | generated {D['generated'][:10]} | design figures, NOT independently certified")
 header(sm, 4, ['Measure', 'Value', 'Source'])
 summary = [
-    ('Theoretical RTP (exact, uncapped)', f"='Line Wins Base'!E{base_total_row}+'Free Spins Feature'!B20", f_link, PCT, 'Exact from strips (formulas in this workbook)', True),
+    ('RTP with the 5,000x cap (design RTP)', '=B6-B7', f_calc, PCT, 'Exact uncapped RTP minus the simulated cost of the cap', True),
+    ('Theoretical RTP (exact, uncapped)', f"='Line Wins Base'!E{base_total_row}+'Free Spins Feature'!B24", f_link, PCT, 'Exact from strips (formulas in this workbook)', False),
+    ('Cost of the 5,000x cap', X['capCost'], f_in, PCT,
+     f"Simulated: {S['capSimulation']['features']:,} features played with no cap, average amount over 5,000x x P(trigger) "
+     f"(95% CI +/- {X['capCostCi95'] * 100:.3f}%)", False),
     ('  of which base game line wins', f"='Line Wins Base'!E{base_total_row}", f_link, PCT, 'Line Wins Base', False),
-    ('  of which free spins feature', "='Free Spins Feature'!B20", f_link, PCT, 'Free Spins Feature', False),
+    ('  of which free spins feature', "='Free Spins Feature'!B24", f_link, PCT, 'Free Spins Feature', False),
     ('Simulated RTP', S['rtp'], f_in, PCT, f"Simulation, {S['rounds']:,} rounds", True),
     ('Simulated RTP 95% confidence (+/-)', S['ci95'], f_in, PCT, '1.96 x SD / sqrt(rounds)', False),
     ('Hit frequency (any line win in base spin)', S['hitFrequency'], f_in, PCT, 'Simulation', False),
     ('Feature frequency: 1 in', "='Free Spins Feature'!B9", f_link, '#,##0.0', 'Exact', False),
     ('Expected free spins per feature', "='Free Spins Feature'!B14", f_link, '0.00', 'Exact', False),
-    ('Expected feature win (x stake)', "='Free Spins Feature'!B19", f_link, '0.00"x"', 'Exact (uncapped)', False),
+    ('Expected feature win (x stake)', "='Free Spins Feature'!B23", f_link, '0.00"x"', 'Exact (uncapped)', False),
+    ('  of which baited swims (x stake)', "='Free Spins Feature'!B22", f_link, '0.00"x"', 'Exact', False),
+    ('Expected catches per swim per feature', '=' + SWIM_CATCH, f_link, '0.000', 'Exact (Baited Swims)', False),
     ('Volatility (standard deviation, x stake)', S['sd'], f_in, '0.00', 'Simulation', False),
     ('Returns below stake (0 < win < 1x)', S['belowStakeReturns'], f_in, PCT, 'Simulation; not celebrated (RTS 14F)', False),
     ('Highest win in simulation (x stake)', S['maxWin'], f_in, '#,##0.0"x"', 'Simulation', False),
     ('Maximum win cap per round (x stake)', D['maxWin'], f_in, '#,##0"x"', 'engine.js MAX_WIN', False),
     ('Rounds that hit the cap in simulation', S['cappedRounds'], f_in, INT, 'Simulation', False),
+    ('Features that reach the cap: 1 in', S['capSimulation']['featuresPerCapHit'], f_in, '#,##0', 'Cap simulation (features with no cap)', False),
+    ('Rounds that reach the cap: 1 in', "=B{cap_row}/'Free Spins Feature'!B8", f_calc, '#,##0', 'Features per cap hit / P(trigger)', False),
     ('Stake range (GB)', '£0.10 to £5.00 (£2.00 max for ages 18 to 24)', f_in, None, 'GB online slots stake limits 2025; operator may set lower', False),
 ]
 for i, (lab, val, font, fmt, src, key) in enumerate(summary):
     r = 5 + i
+    if isinstance(val, str) and '{cap_row}' in val:
+        val = val.replace('{cap_row}', str(r - 1))   # refers to the row just above
     put(sm, r, 1, lab, bold=key); c = put(sm, r, 2, val, font, fmt, bold=key); note(sm, r, src, 3)
     if key:
         c.fill = fill_key
 r = 6 + len(summary)
 notes = [
     'Colour key: blue = input from game files or simulation; black = formula; green = link to another sheet.',
-    'Exact figures assume the 5,000x cap is never reached; the simulation never reached it, so the effect is negligible.',
+    'Exact figures ignore the 5,000x cap. The simulation shows how rarely it is reached; its effect on RTP is a few thousandths of a percent.',
     'Simulation uses the production engine (client/src/engine.js) with a seeded PRNG for repeatability.',
     'Regenerate: node math/par_sheet.mjs 50000000 then python math/par_xlsx.py',
     'This is the developer\'s design PAR. Certification by a UKGC-approved test house is required before real-money use.',

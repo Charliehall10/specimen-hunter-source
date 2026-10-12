@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-SPECIMEN HUNTER - v0.1 math simulator
+SPECIMEN HUNTER - v1.1 math simulator
 5x3, 10 fixed paylines, "Three Rods" scatter (bite alarms, reels 2-4 only),
-free spins with simple fish-weight collect.
+free spins with fish-weight cash prizes and three baited swims that multiply
+the fish caught in them (x2, doubling with every catch, up to x32).
 
 Usage:
     python specimen_hunter_sim.py --spins 50000000
@@ -62,12 +63,12 @@ BASE_COUNTS = [
          ROACH=1, BREAM=1, TENCH=1, MIRROR=1, WILD=2),
 ]
 # Free spins strips: same as base but N low symbols per reel swapped for CASH fish
-FS_CASH_PER_REEL = [4, 4, 4, 4, 4]
+FS_CASH_PER_REEL = [3, 3, 3, 3, 3]
 
 # Fish weights (display only) -> value in multiples of TOTAL BET, with probability weight.
 # The weight shown to the player is a fixed lookup of the value, so it is never misleading.
 FISH = [  # (label, multiplier, relative weight)
-    ("2lb 4oz",   0.5, 300),   ("4lb 0oz",   1, 250),  ("6lb 8oz",   2, 170),
+    ("2lb 4oz",   0.5, 394),   ("4lb 0oz",   1, 250),  ("6lb 8oz",   2, 170),
     ("9lb 12oz",  3, 110),     ("14lb 0oz",  5,  80),  ("19lb 8oz",  8,  38),
     ("26lb 0oz", 12,  22.5),   ("32lb 8oz", 20,  13),   ("38lb 12oz", 50,  6.5),
     ("45lb 4oz", 100,  1.75),  ("52lb 0oz", 250,  0.5), ("64lb 8oz", 1000, 0.1),  # record fish
@@ -78,6 +79,11 @@ FISH_P /= FISH_P.sum()
 
 FS_START_SPINS = 10
 FS_RETRIGGER_SPINS = 5
+# Baited swims: before the first free spin, 3 swims are baited on 3 different reels (random row on each).
+# A fish landing in a swim pays its prize x the swim multiplier, then that multiplier doubles.
+# SWIM_LADDER[c] = multiplier paid by a swim's (c+1)th catch; the last value repeats.
+SWIM_COUNT = 3
+SWIM_LADDER = np.array([2, 4, 8, 16, 32], dtype=np.float64)
 MAX_WIN = 5000.0          # cap, multiples of total bet; feature ends if reached
 STRIP_SEED = 20260610     # strips are built once from this seed so they are reproducible
 BUCKETS = [0, 1e-9, 1, 2, 5, 10, 20, 50, 100, 500, 1000, MAX_WIN, np.inf]
@@ -177,12 +183,22 @@ def three_rods(win):
     return a.all(axis=1)
 
 
+def bait_swims(n, rng):
+    """SWIM_COUNT distinct reels per feature, each with a random row."""
+    reels = np.argsort(rng.random((n, 5)), axis=1)[:, :SWIM_COUNT]
+    rows = rng.integers(0, 3, (n, SWIM_COUNT))
+    return reels, rows
+
+
 def play_free_spins(machine, base_win, rng):
     n = base_win.size
     left = np.full(n, FS_START_SPINS)
     total = np.zeros(n)
+    swim_win = np.zeros(n)
     played = np.zeros(n, dtype=np.int64)
     retrigs = np.zeros(n, dtype=np.int64)
+    sw_reel, sw_row = bait_swims(n, rng)
+    catches = np.zeros((n, SWIM_COUNT), dtype=np.int64)
     while True:
         act = np.flatnonzero(left > 0)
         if act.size == 0:
@@ -190,9 +206,18 @@ def play_free_spins(machine, base_win, rng):
         m = act.size
         win = machine.spin(m, rng)
         w = line_wins(win)
-        c = (win == CASH).sum(axis=(1, 2))
-        vals = rng.choice(FISH_VALS, size=int(c.sum()), p=FISH_P)
-        cash = np.bincount(np.repeat(np.arange(m), c), weights=vals, minlength=m)
+        is_cash = win == CASH
+        vals = np.zeros(win.shape)
+        vals[is_cash] = rng.choice(FISH_VALS, size=int(is_cash.sum()), p=FISH_P)
+        cash = vals.sum(axis=(1, 2))
+        # fish in a swim: pay x the swim's current multiplier (the x1 already counted above), then step it up
+        idx = np.arange(m)[:, None]
+        hit = is_cash[idx, sw_reel[act], sw_row[act]]
+        mult = SWIM_LADDER[np.minimum(catches[act], SWIM_LADDER.size - 1)]
+        sv = (vals[idx, sw_reel[act], sw_row[act]] * mult * hit).sum(axis=1)
+        cash += sv - (vals[idx, sw_reel[act], sw_row[act]] * hit).sum(axis=1)
+        catches[act] += hit
+        swim_win[act] += sv
         total[act] += w + cash
         played[act] += 1
         rt = three_rods(win)
@@ -200,7 +225,7 @@ def play_free_spins(machine, base_win, rng):
         left[act] += rt * FS_RETRIGGER_SPINS - 1
         capped = (base_win[act] + total[act]) >= MAX_WIN
         left[act[capped]] = 0
-    return total, played, retrigs
+    return total, played, retrigs, catches, swim_win
 
 
 # =====================================================================
@@ -212,8 +237,9 @@ def run_chunk(args):
     bm, fm = Machine(base_s), Machine(fs_s)
     rng = np.random.default_rng(seed)
     st = dict(n=0, sum=0.0, sumsq=0.0, hits=0, trig=0, base_sum=0.0, fs_sum=0.0,
-              fs_spins=0, fs_retrig=0, maxwin=0.0, capped=0, ldw=0,
-              hist=np.zeros(len(BUCKET_NAMES), dtype=np.int64), fs_wins=[])
+              fs_spins=0, fs_retrig=0, maxwin=0.0, capped=0, ldw=0, swim_sum=0.0,
+              hist=np.zeros(len(BUCKET_NAMES), dtype=np.int64),
+              swim_catches=np.zeros(8, dtype=np.int64))
     done = 0
     batch = 1_000_000
     while done < n_spins:
@@ -223,9 +249,11 @@ def run_chunk(args):
         total = base.copy()
         trig = np.flatnonzero(three_rods(win))
         if trig.size:
-            fw, played, rt = play_free_spins(fm, base[trig], rng)
+            fw, played, rt, catches, sw = play_free_spins(fm, base[trig], rng)
             total[trig] += fw
             st["fs_sum"] += fw.sum()
+            st["swim_sum"] += sw.sum()
+            st["swim_catches"] += np.bincount(np.minimum(catches.ravel(), 7), minlength=8)
             st["fs_spins"] += int(played.sum())
             st["fs_retrig"] += int(rt.sum())
         total = np.minimum(total, MAX_WIN)
@@ -259,7 +287,7 @@ def report(st):
     var = st["sumsq"] / n - mean ** 2
     sd = var ** 0.5
     se = sd / n ** 0.5
-    print(f"\n=== SPECIMEN HUNTER v0.1 | {n:,} spins ===")
+    print(f"\n=== SPECIMEN HUNTER v1.1 | {n:,} spins ===")
     print(f"Total RTP            {mean*100:7.3f}%   (95% CI +/- {1.96*se*100:.3f}%)")
     print(f"  base line wins     {st['base_sum']/n*100:7.3f}%")
     print(f"  free spins         {(mean - st['base_sum']/n)*100:7.3f}%")
@@ -269,7 +297,9 @@ def report(st):
     print(f"Feature frequency    1 in {n/max(t,1):,.0f}   ({t:,} triggers)")
     if t:
         print(f"Avg FS spins         {st['fs_spins']/t:7.2f}   (retrigger rate {st['fs_retrig']/st['fs_spins']*100:.2f}% per spin)")
-        print(f"Avg feature win      {st['fs_sum']/t:7.1f}x bet")
+        print(f"Avg feature win      {st['fs_sum']/t:7.1f}x bet   (swim catches {st['swim_sum']/st['fs_sum']*100:.1f}% of it, before the cap)")
+        sc = st["swim_catches"]
+        print("Catches per swim     " + "  ".join(f"{k}{'+' if k == 7 else ''}: {c/sc.sum()*100:.2f}%" for k, c in enumerate(sc)))
     print(f"Volatility (std dev) {sd:7.2f}   (per-spin win, x bet)")
     print(f"Max win observed     {st['maxwin']:7.1f}x   | cap hits: {st['capped']:,}")
     print("\nWin distribution (share of spins):")
@@ -297,6 +327,10 @@ def theory():
             print(f"Expected FS length = {FS_START_SPINS/(1-FS_RETRIGGER_SPINS*p):.2f} spins")
     print("Strip lengths:", [len(s) for s in base])
     print("Mean fish value: %.3fx bet" % float((FISH_VALS * FISH_P).sum()))
+    p_cash = [s.count(CASH) / len(s) for s in fs]
+    print("Free spins: chance of a fish in any one swim per spin =", [round(x, 4) for x in p_cash], "(by reel)")
+    print("Swim ladder (catch 1, 2, 3 ...):", [f"x{int(m)}" for m in SWIM_LADDER])
+    print("Exact feature RTP with swims: run  node math/par_sheet.mjs")
 
 
 def export_strips():

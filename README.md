@@ -18,7 +18,7 @@ Source code for **Specimen Hunter**, an original British carp-fishing slot (5 re
 ## Running it
 
 ```
-cd client && npm install && npm run dev     # play at http://localhost:5173
+cd client && npm install && npm run dev     # play at http://localhost:5173 (symbols: /art-sheet.html)
 cd client && npm test                       # engine tests
 cd client && npm run verify                 # RTP check against the Python simulator (20M rounds)
 cd server && npm test && npm start          # API tests, then the server on port 8787
@@ -27,7 +27,7 @@ bash site/build.sh                          # build the static demo site into si
 
 ## How the maths is checked
 
-The Python simulator in `math/` defines the game and exports the reel strips. The JavaScript engine is a port of it, and the same engine file runs in the browser demo and on the server. The theoretical RTP of 96.14% is worked out exactly from the strips, and a 50-million-round simulation agrees (96.06% ± 0.20%).
+The Python simulator in `math/` defines the game and exports the reel strips. The JavaScript engine is a port of it, and the same engine file runs in the browser demo and on the server. The RTP is worked out exactly from the strips (96.23% before the 5,000× win cap, including the baited-swim multipliers, which are stepped through every possible feature). The cap's cost is measured by playing 20 million features without it (0.085% ± 0.010), giving a design RTP of **96.14%**. Simulations agree: 96.07% ± 0.25% over 50 million rounds of the JS engine and 96.11% ± 0.08% over 500 million rounds of the Python simulator.
 
 ## Status
 

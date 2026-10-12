@@ -1,6 +1,6 @@
-# Specimen Hunter: game spec and symbol sheet (v1.0 demo)
+# Specimen Hunter: game spec and symbol sheet (v1.1 demo)
 
-UK carp-fishing video slot. 5 reels × 3 rows, 10 fixed paylines, "Three Rods" free spins with a fish-weighing cash collect.
+UK carp-fishing video slot. 5 reels × 3 rows, 10 fixed paylines, "Three Rods" free spins with weighed cash fish and three baited swims that multiply every fish caught in them (×2, doubling with each catch, up to ×32).
 Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" is a registered US slot trademark of King Show Games; see docs/legal). UK/EU trade mark check still to do. All figures are design figures from the in-house simulator, **not certified**.
 
 ## At a glance
@@ -9,12 +9,12 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 |---|---|
 | Grid / lines | 5×3, 10 fixed lines, left to right |
 | Stakes | £0.10 to £5.00 (10p steps to £3.00, then 50p steps; 34 levels) |
-| RTP (design) | 96.1% (base 54.1%, free spins 42.0%) |
+| RTP (design) | 96.14% with the 5,000× cap: exact 96.23% uncapped (base 54.14%, free spins 42.09%) less 0.085% ± 0.010 lost to the cap |
 | Hit frequency | 25.5% |
 | Feature frequency | 1 in 152 spins |
-| Average feature win | 63.7× stake (10.3 spins on average) |
-| Volatility (SD) | 7.21 |
-| Max win | Capped at 5,000× per round. Highest seen in 500M simulated spins: 2,118×. Advertised figure still to be decided |
+| Average feature win | 63.8× stake (10.3 spins on average), of which 26.2× from fish caught in swims |
+| Volatility (SD) | 8.9 (50M rounds, JS engine) to 9.1 (500M rounds, Python); was 7.2 before the swims |
+| Max win | 5,000× per round (cap). Reached about 1 in 6 million rounds (1 in 40,000 features); uncapped, a feature reached 32,515× in 20M simulated features |
 | Spin time | Minimum 2.5 s, fixed reel stops; no autoplay, turbo or quick stop |
 
 ## Symbols and paytable (multiples of total stake)
@@ -36,12 +36,15 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 
 - **Leather Carp (Wild)**: reels 2 to 5. Substitutes for all line symbols except Bite Alarm and Specimen Fish. No pay of its own.
 - **Bite Alarm (Scatter)**: reels 2, 3 and 4 only.
-- **Specimen Fish (Cash)**: free spins only. Carries a weight that maps to a fixed prize.
+- **Specimen Fish (Cash)**: free spins only. Carries a weight that maps to a fixed prize, multiplied if it lands in a baited swim.
 
 ## Three Rods free spins
 
 - One Bite Alarm on each of reels 2, 3 and 4 in the same spin awards **10 free spins** at the triggering stake.
 - During free spins the reels use the free-spins strips. Every Specimen Fish that lands is weighed and its prize is paid at once (all fish on screen, every spin).
+- **Baited swims.** Before the first free spin the three rods each cast a spod of bait into a swim: 3 swims on 3 different reels, a random row on each (all placements equally likely). The swims stay in place for the whole feature, including retriggered spins.
+- A fish that lands in a swim pays its prize × the swim's multiplier, then the multiplier doubles. Every swim starts at ×2: 1st catch ×2, 2nd ×4, 3rd ×8, 4th ×16, 5th and later ×32. Fish outside the swims pay ×1.
+- Each swim shows a marker float and its next multiplier on the reels; the side panel lists every swim's multiplier and what it has paid.
 - Three Bite Alarms during free spins add **5 spins** (no limit other than the win cap).
 - Line wins pay as normal during free spins.
 
@@ -49,7 +52,7 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 
 | Weight | Prize (× stake) | Weight share |
 |---|---|---|
-| 2lb 4oz | 0.5 | 300 |
+| 2lb 4oz | 0.5 | 397 |
 | 4lb 0oz | 1 | 250 |
 | 6lb 8oz | 2 | 170 |
 | 9lb 12oz | 3 | 110 |
@@ -62,16 +65,16 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 | **52lb 0oz (record)** | **250** | 0.5 |
 | **64lb 8oz (record)** | **1,000** | 0.1 |
 
-Mean fish value: 3.052× stake.
+Mean fish value: 2.825× stake (before swim multipliers). The 2lb 4oz share was raised from 300 to 397 when the swims were added, to keep the RTP at 96.1%.
 
 ## Reel strips (symbol counts per 32-stop reel)
 
 | Symbol | Base R1 | R2 | R3 | R4 | R5 | Free spins R1 | R2 | R3 | R4 | R5 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Float | 5 | 3 | 3 | 3 | 4 | 3 | 2 | 2 | 2 | 3 |
-| Boilies | 5 | 3 | 3 | 3 | 4 | 3 | 2 | 2 | 2 | 3 |
+| Boilies | 5 | 3 | 3 | 3 | 4 | 4 | 3 | 3 | 3 | 3 |
 | Sweetcorn | 4 | 4 | 4 | 4 | 4 | 4 | 3 | 3 | 3 | 3 |
-| Pellets | 4 | 4 | 4 | 4 | 4 | 4 | 3 | 3 | 3 | 3 |
+| Pellets | 4 | 4 | 4 | 4 | 4 | 4 | 3 | 3 | 3 | 4 |
 | Flask | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 | Catapult | 3 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | 2 | 3 |
 | Landing Net | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
@@ -82,7 +85,7 @@ Mean fish value: 3.052× stake.
 | Mirror Carp | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
 | Leather Carp (Wild) | 0 | 3 | 3 | 3 | 2 | 0 | 3 | 3 | 3 | 2 |
 | Bite Alarm | 0 | 2 | 2 | 2 | 0 | 0 | 2 | 2 | 2 | 0 |
-| Specimen Fish | – | – | – | – | – | 4 | 4 | 4 | 4 | 4 |
+| Specimen Fish | – | – | – | – | – | 3 | 3 | 3 | 3 | 3 |
 
 Full strips: `client/strips.json` (exported by `math/specimen_hunter_sim.py --export-strips`).
 
@@ -109,4 +112,4 @@ Full strips: `client/strips.json` (exported by `math/specimen_hunter_sim.py --ex
 - Certified RNG and server-side outcome generation (the demo uses `Math.random` in the browser).
 - Independent test-house certification of the maths and game.
 - Check current UKGC Remote Gambling and Software Technical Standards, stake limits and feature-buy rules. Do not rely on this document for them.
-- Trademark check on the name; patent check on the collect mechanic; decide the advertised max win.
+- Trademark check on the name; patent check on the cash-fish and swim-multiplier mechanics (see docs/legal); decide the advertised max win.

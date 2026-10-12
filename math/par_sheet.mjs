@@ -1,8 +1,11 @@
 // PAR sheet data for Specimen Hunter: exact strip maths + simulation of the production engine.
-// Usage (from the repo root):  node math/par_sheet.mjs [rounds=50000000] [seed=2026]
+// Usage (from the repo root):  node math/par_sheet.mjs [rounds=50000000] [seed=2026] [capFeatures=20000000]
 // Writes docs/par/specimen-hunter-par.json (read by math/par_xlsx.py to build the spreadsheet).
+// rounds = 0 prints the exact figures only (quick check while tuning).
 import fs from 'node:fs';
-import { makeEngine, PAY, PAYLINES, FISH, MAX_WIN } from '../client/src/engine.js';
+import os from 'node:os';
+import { Worker } from 'node:worker_threads';
+import { makeEngine, PAY, PAYLINES, FISH, MAX_WIN, SWIM_COUNT, SWIM_LADDER, swimMult } from '../client/src/engine.js';
 
 const ROOT = new URL('..', import.meta.url);
 const strips = JSON.parse(fs.readFileSync(new URL('client/strips.json', ROOT)));
@@ -49,16 +52,71 @@ const pTrigBase = visible('base', 'ALARM').slice(1, 4).reduce((a, v) => a * v, 1
 const pTrigFs = visible('free_spins', 'ALARM').slice(1, 4).reduce((a, v) => a * v, 1);
 const fishTotalW = FISH.reduce((a, f) => a + f[2], 0);
 const meanFish = FISH.reduce((a, f) => a + f[1] * f[2], 0) / fishTotalW;
-const cashPerSpin = strips.free_spins.reduce((a, reel) => a + 3 * reel.filter(x => x === 'CASH').length / reel.length, 0);
+const pCash = strips.free_spins.map(reel => reel.filter(x => x === 'CASH').length / reel.length);   // per cell, by reel
+const cashPerSpin = 3 * pCash.reduce((a, v) => a + v, 0);
+// Each swim is on a different reel; any one swim is equally likely to be on any of the 15 cells.
+const swimCashPerSpin = SWIM_COUNT * pCash.reduce((a, v) => a + v, 0) / 5;
 const expFsSpins = 10 / (1 - 5 * pTrigFs);
-const fsSpinWin = lineRtp(fsLine) + cashPerSpin * meanFish;
+
+// Catches in one swim over a whole feature. The swim's reel also decides whether its alarm shows, so the
+// retrigger and the catch are not independent: work out their joint chance per spin, then step through
+// the feature exactly (state = spins left x catches so far) until the remaining chance is negligible.
+const MAX_CATCH = 24;
+function swimCatchDistribution(reel, row) {
+  const strip = strips.free_spins[reel], L = strip.length;
+  const joint = [[0, 0], [0, 0]];   // [alarm visible on this reel][fish in the swim]
+  for (let p = 0; p < L; p++) {
+    const win = [0, 1, 2].map(k => strip[(p + k) % L]);
+    joint[+win.includes('ALARM')][+(win[row] === 'CASH')] += 1 / L;
+  }
+  const vis = visible('free_spins', 'ALARM');
+  const other = [1, 2, 3].filter(r => r !== reel).reduce((a, r) => a * vis[r], 1);   // other alarm reels
+  const pr = [[0, 0], [0, 0]];      // [retrigger][catch]
+  for (const hit of [0, 1]) {
+    const pHit = joint[0][hit] + joint[1][hit];
+    pr[1][hit] = [1, 2, 3].includes(reel) ? joint[1][hit] * other : pHit * pTrigFs;
+    pr[0][hit] = pHit - pr[1][hit];
+  }
+  const out = new Array(MAX_CATCH + 1).fill(0);
+  let cur = new Map([[`10,0`, 1]]), live = 1;
+  while (live > 1e-15) {
+    const next = new Map();
+    for (const [key, mass] of cur) {
+      const [left, c] = key.split(',').map(Number);
+      for (const rt of [0, 1]) for (const hit of [0, 1]) {
+        const m = mass * pr[rt][hit]; if (!m) continue;
+        const l2 = left - 1 + 5 * rt, c2 = Math.min(MAX_CATCH, c + hit);
+        if (l2 === 0) out[c2] += m;
+        else { const k2 = `${l2},${c2}`; next.set(k2, (next.get(k2) ?? 0) + m); }
+      }
+    }
+    cur = next; live = [...cur.values()].reduce((a, v) => a + v, 0);
+  }
+  return out;
+}
+const cells = [0, 1, 2, 3, 4].flatMap(r => [0, 1, 2].map(k => [r, k]));
+const swimCatches = cells.map(([r, k]) => swimCatchDistribution(r, k))
+  .reduce((acc, d) => acc.map((v, i) => v + d[i] / cells.length), new Array(MAX_CATCH + 1).fill(0));
+const cumMult = n => { let m = 0; for (let c = 0; c < n; c++) m += swimMult(c); return m; };
+const swimMultPerSwim = swimCatches.reduce((a, pn, n) => a + pn * cumMult(n), 0);   // E[sum of multipliers paid]
+const fsSpinWin = lineRtp(fsLine) + (cashPerSpin - swimCashPerSpin) * meanFish;      // everything except swim catches
 const exact = {
   baseLineRtp: lineRtp(baseLine), fsLineRtpPerSpin: lineRtp(fsLine), pTriggerBase: pTrigBase, pRetriggerFs: pTrigFs,
-  expectedFreeSpins: expFsSpins, expectedCashFishPerSpin: cashPerSpin, meanFishValue: meanFish,
-  expectedFsSpinWin: fsSpinWin, expectedFeatureWinUncapped: expFsSpins * fsSpinWin,
+  expectedFreeSpins: expFsSpins, expectedCashFishPerSpin: cashPerSpin, expectedSwimFishPerSpin: swimCashPerSpin, meanFishValue: meanFish,
+  swimCount: SWIM_COUNT, swimLadder: SWIM_LADDER, swimCatchDistribution: swimCatches,
+  expectedCatchesPerSwim: swimCatches.reduce((a, pn, n) => a + pn * n, 0), expectedSwimMultiplierPerSwim: swimMultPerSwim,
+  expectedFsSpinWinOutsideSwims: fsSpinWin, expectedSwimWin: SWIM_COUNT * swimMultPerSwim * meanFish,
 };
+exact.expectedFeatureWinUncapped = expFsSpins * fsSpinWin + exact.expectedSwimWin;
 exact.featureRtpUncapped = pTrigBase * exact.expectedFeatureWinUncapped;
 exact.totalRtpUncapped = exact.baseLineRtp + exact.featureRtpUncapped;
+const exactReport = () => {
+  console.log(`Exact (uncapped): base lines ${(exact.baseLineRtp * 100).toFixed(3)}%  feature ${(exact.featureRtpUncapped * 100).toFixed(3)}%  total ${(exact.totalRtpUncapped * 100).toFixed(3)}%`);
+  console.log(`Exact: trigger 1 in ${(1 / pTrigBase).toFixed(1)}, E[free spins] ${expFsSpins.toFixed(3)}, E[feature win] ${exact.expectedFeatureWinUncapped.toFixed(2)}x ` +
+    `(swims ${exact.expectedSwimWin.toFixed(2)}x), mean fish ${meanFish.toFixed(4)}x, catches per swim ${exact.expectedCatchesPerSwim.toFixed(4)} ` +
+    `(check ${(expFsSpins * swimCashPerSpin / SWIM_COUNT).toFixed(4)})`);
+};
+if (N === 0) { exactReport(); process.exit(0); }
 
 // ---------------------------------------------------------------- simulation (production engine)
 function mulberry32(a) {
@@ -85,17 +143,44 @@ for (let i = 0; i < N; i++) {
 }
 // Separate run for base vs feature split (needs the detailed round)
 const E2 = makeEngine(strips, mulberry32(SEED + 1)); const N2 = Math.min(N, 10_000_000);
-for (let i = 0; i < N2; i++) { const d = E2.playRoundDetailed(); baseSum += d.base.total; if (d.freeSpins.length) featSum += d.total - d.base.total; }
+let features2 = 0, swimWin = 0, swimCatchesSim = new Array(8).fill(0), topMult = new Array(SWIM_LADDER.length + 1).fill(0);
+for (let i = 0; i < N2; i++) {
+  const d = E2.playRoundDetailed(); baseSum += d.base.total;
+  if (!d.freeSpins.length) continue;
+  featSum += d.total - d.base.total; features2++;
+  for (const r of d.freeSpins) for (const f of Object.values(r.cash)) if (f.swim >= 0) swimWin += f.value * f.mult;
+  const last = d.freeSpins[d.freeSpins.length - 1].swims;
+  last.forEach(w => swimCatchesSim[Math.min(7, w.catches)]++);
+  topMult[Math.min(SWIM_LADDER.length, Math.max(...last.map(w => w.catches)))]++;   // most catches in any one swim
+}
+// What the 5,000x cap costs. The exact maths above ignores the cap, and a record fish in a deep swim can go well
+// past it, so simulate whole features with no cap and average how far they go over. (The triggering spin's own
+// line win is left out: it is small, so this slightly understates the cost.)
+const W = Math.max(1, os.availableParallelism() - 1), NF = Math.round(Number(process.argv[4] ?? 20_000_000) / W) * W;
+const parts = await Promise.all(Array.from({ length: W }, (_, i) => new Promise((resolve, reject) => {
+  const w = new Worker(new URL('./cap_worker.mjs', import.meta.url), { workerData: { seed: SEED * 1000 + i, features: Math.round(NF / W) } });
+  w.on('message', resolve); w.on('error', reject);
+})));
+const over = parts.reduce((a, p) => a + p.over, 0), over2 = parts.reduce((a, p) => a + p.over2, 0);
+const overN = parts.reduce((a, p) => a + p.overN, 0), featMax = Math.max(...parts.map(p => p.max));
+const overMean = over / NF, overSd = Math.sqrt(over2 / NF - overMean * overMean);
+exact.capCost = pTrigBase * overMean;
+exact.capCostCi95 = pTrigBase * 1.96 * overSd / Math.sqrt(NF);
+exact.totalRtpWithCap = exact.totalRtpUncapped - exact.capCost;
+const capSim = { features: NF, overCap: overN, featuresPerCapHit: NF / Math.max(1, overN), maxUncappedFeatureWin: featMax };
 const mean = sum / N, sd = Math.sqrt(sumsq / N - mean * mean);
 const sim = {
   rounds: N, seed: SEED, seconds: Math.round((Date.now() - t0) / 1000), rtp: mean, ci95: 1.96 * sd / Math.sqrt(N), sd,
   hitFrequency: hits / N, featureFrequency: trig / N, avgFreeSpins: fsSpins / Math.max(1, trig), maxWin: max, cappedRounds: capped,
   belowStakeReturns: ldw / N, splitRounds: N2, baseRtpSplit: baseSum / N2, featureRtpSplit: featSum / N2,
+  splitFeatures: features2, swimShareOfFeatureWin: swimWin / Math.max(1e-9, featSum),
+  swimCatchDistribution: swimCatchesSim.map(c => c / Math.max(1, features2 * SWIM_COUNT)),
+  bestSwimDistribution: topMult.map(c => c / Math.max(1, features2)), capSimulation: capSim,
   distribution: BUCKETS.map(([lo, hi, label], j) => ({ label, rounds: dist[j].n, probability: dist[j].n / N, rtpContribution: dist[j].sum / N })),
 };
 
 const out = {
-  game: 'Specimen Hunter', version: 'v1.0 demo', generated: new Date().toISOString(), maxWin: MAX_WIN, lines: PAYLINES, reels: '5x3',
+  game: 'Specimen Hunter', version: 'v1.1 demo (baited swims)', generated: new Date().toISOString(), maxWin: MAX_WIN, lines: PAYLINES, reels: '5x3',
   paytable: PAY, fish: FISH, strips: { base: strips.base, free_spins: strips.free_spins },
   stripCounts: { base: counts('base'), free_spins: counts('free_spins') },
   lineProbabilities: { base: baseLine, free_spins: fsLine },
@@ -104,7 +189,8 @@ const out = {
 };
 fs.mkdirSync(new URL('docs/par/', ROOT), { recursive: true });
 fs.writeFileSync(new URL('docs/par/specimen-hunter-par.json', ROOT), JSON.stringify(out, null, 1));
-console.log(`Exact (uncapped): base lines ${(exact.baseLineRtp * 100).toFixed(3)}%  feature ${(exact.featureRtpUncapped * 100).toFixed(3)}%  total ${(exact.totalRtpUncapped * 100).toFixed(3)}%`);
-console.log(`Exact: trigger 1 in ${(1 / pTrigBase).toFixed(1)}, E[free spins] ${expFsSpins.toFixed(3)}, E[feature win] ${exact.expectedFeatureWinUncapped.toFixed(2)}x`);
+exactReport();
+console.log(`Cap: ${NF.toLocaleString()} uncapped features, 1 in ${capSim.featuresPerCapHit.toFixed(0)} go over ${MAX_WIN}x (max ${featMax.toFixed(0)}x); ` +
+  `cap costs ${(exact.capCost * 100).toFixed(3)}% +/- ${(exact.capCostCi95 * 100).toFixed(3)} RTP -> RTP with cap ${(exact.totalRtpWithCap * 100).toFixed(3)}%`);
 console.log(`Sim ${N.toLocaleString()} rounds (${sim.seconds}s): RTP ${(mean * 100).toFixed(3)}% +/- ${(sim.ci95 * 100).toFixed(3)}  hit ${(sim.hitFrequency * 100).toFixed(2)}%  ` +
   `feature 1 in ${(1 / sim.featureFrequency).toFixed(1)}  SD ${sd.toFixed(2)}  max ${max.toFixed(1)}x  capped ${capped}`);

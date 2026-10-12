@@ -1,7 +1,7 @@
 // Info (paytable / feature / paylines / rules), history, reality check and title screens.
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { W, H, SYMBOLS, LINE_COLOURS, MIN_SPIN_MS, REALITY_CHECK_MIN, DEMO_BONUS, money } from './config.js';
-import { PAY, PAYLINES, FISH, MAX_WIN } from './engine.js';
+import { PAY, PAYLINES, FISH, MAX_WIN, SWIM_LADDER } from './engine.js';
 import { getArtScale } from './art.js';
 import { Modal, Button, label } from './ui.js';
 
@@ -30,20 +30,29 @@ function paytablePage(textures, stake) {
 
 function featurePage(textures, stake) {
   const p = new Container();
-  p.addChild(label('THREE RODS FREE SPINS', 24, 0xf2c14e, { x: 0, y: -226 }));
-  p.addChild(body('Land a Bite Alarm on reels 2, 3 and 4 in the same spin to win 10 free spins.\n' +
-    'In free spins, Specimen Fish can land on any reel. Every fish is weighed and its value is paid straight away.\n' +
-    'Land three Bite Alarms again during free spins for 5 more spins. Line wins pay as normal.', 16, 1000, 0, -200));
-  p.addChild(icon(textures, 'CASH', -440, 70, 0.62));
-  p.addChild(label('FISH WEIGHT → PRIZE', 17, 0xffe066, { x: 30, y: -64 }));
+  p.addChild(label('THREE RODS FREE SPINS', 24, 0xf2c14e, { x: 0, y: -230 }));
+  p.addChild(body('Land a Bite Alarm on reels 2, 3 and 4 in the same spin to win 10 free spins. Before the first free spin, three swims are ' +
+    'baited on three different reels; they stay put for the whole feature.\n' +
+    'Specimen Fish can land anywhere. Every fish is weighed and paid straight away. A fish caught in a swim is paid at that ' +
+    'swim\'s multiplier, and the multiplier then doubles. Three Bite Alarms add 5 more spins. Line wins pay as normal.', 16, 1000, 0, -206));
+  p.addChild(label('SWIM MULTIPLIER', 16, 0xffd36a, { x: 0, y: -84 }));
+  SWIM_LADDER.forEach((m, i) => {
+    const x = -300 + i * 150, last = i === SWIM_LADDER.length - 1;
+    p.addChild(new Graphics().roundRect(x - 62, -66, 124, 44, 10).fill({ color: 0x3a2a08, alpha: 0.95 }).stroke({ width: 2, color: 0xf2c14e }));
+    p.addChild(label(`×${m}`, 22, 0xffe066, { x, y: -52 }));
+    p.addChild(label(last ? `catch ${i + 1} and on` : `catch ${i + 1}`, 12, 0xdbe7ec, { x, y: -32, stroke: { width: 0 } }));
+    if (!last) p.addChild(label('›', 22, 0xf2c14e, { x: x + 75, y: -46 }));
+  });
+  p.addChild(icon(textures, 'CASH', -445, 110, 0.6));
+  p.addChild(label('FISH WEIGHT → PRIZE', 16, 0xffe066, { x: 30, y: 4 }));
   FISH.forEach(([w, mult], i) => {
-    const col = i % 3, row = Math.floor(i / 3), x = -220 + col * 260, y = -30 + row * 44;
+    const col = i % 3, row = Math.floor(i / 3), x = -220 + col * 260, y = 36 + row * 42;
     const special = mult >= 250;
-    p.addChild(new Graphics().roundRect(x - 115, y - 17, 230, 34, 8).fill({ color: special ? 0x5a4210 : 0x10303f, alpha: 0.9 })
+    p.addChild(new Graphics().roundRect(x - 115, y - 16, 230, 32, 8).fill({ color: special ? 0x5a4210 : 0x10303f, alpha: 0.9 })
       .stroke({ width: 1, color: special ? 0xffd84d : 0x2f5d70 }));
     p.addChild(label(`${w}  =  ${money(mult * stake)}`, 16, special ? 0xffe066 : 0xffffff, { x, y, stroke: { width: 0 } }));
   });
-  p.addChild(body('Record fish: 52lb 0oz pays 250× stake and 64lb 8oz pays 1,000× stake.', 15, 900, 30, 156, 0xffe066));
+  p.addChild(body('Record fish: 52lb 0oz pays 250× stake and 64lb 8oz pays 1,000× stake, before any swim multiplier.', 15, 900, 30, 206, 0xffe066));
   return p;
 }
 
@@ -70,7 +79,7 @@ function rulesPage() {
     `• Every spin lasts at least ${MIN_SPIN_MS / 1000} seconds. There is no autoplay, turbo or quick stop.`,
     '• Returns smaller than your stake are shown as returns, not as wins.',
     `• Your session time and net position are always on screen. A reality check appears every ${REALITY_CHECK_MIN} minutes.`,
-    '• Free spins are played at the stake that triggered them.',
+    '• Free spins are played at the stake that triggered them. Swim positions are chosen at random when the feature starts.',
     '• Malfunction voids all pays and plays.',
     '• Demo money only. This build uses a non-certified random number generator and is not for real-money play.',
     DEMO_BONUS ? '• DEMO BONUS starts the free spins at no cost. It exists only for demonstrations and is removed in release builds.' : '',
@@ -135,10 +144,10 @@ export function titleScreen(stage, logo, textures) {
     const dim = new Graphics().rect(-W, -H, W * 3, H * 3).fill({ color: 0x02080c, alpha: 0.86 }); dim.eventMode = 'static'; dim.cursor = 'pointer';
     const lg = new Sprite(logo); lg.anchor.set(0.5); lg.scale.set(0.62); lg.position.set(W / 2, 170);
     c.addChild(dim, lg, label('A UK carp-fishing slot · 5 reels · 10 lines', 22, 0xdbe7ec, { x: W / 2, y: 240 }));
-    ['CASH', 'ALARM', 'MIRROR'].forEach((s, i) => c.addChild(icon(textures, s, W / 2 - 260 + i * 260, 380, 0.9)));
-    [['Specimen fish', 'weighed & paid in free spins'], ['Three Rods', 'alarms on reels 2, 3 & 4'], ['Record fish', 'up to 1,000× stake']]
+    ['ALARM', 'CASH', 'MIRROR'].forEach((s, i) => c.addChild(icon(textures, s, W / 2 - 280 + i * 280, 380, 0.9)));
+    [['Three Rods', 'alarms on reels 2, 3 & 4'], ['Baited swims', 'fish in a swim pay ×2, ×4, ×8 …'], ['Record fish', 'up to 1,000× stake']]
       .forEach(([a, b], i) => {
-        c.addChild(label(a, 22, 0xf2c14e, { x: W / 2 - 260 + i * 260, y: 466 }), label(b, 15, 0xdbe7ec, { x: W / 2 - 260 + i * 260, y: 492 }));
+        c.addChild(label(a, 22, 0xf2c14e, { x: W / 2 - 280 + i * 280, y: 466 }), label(b, 15, 0xdbe7ec, { x: W / 2 - 280 + i * 280, y: 492 }));
       });
     const tap = label('TAP OR PRESS SPACE TO START', 26, 0xffffff, { x: W / 2, y: 580 });
     c.addChild(tap, label('Demo money only · 18+ · Play responsibly', 14, 0x9fb7c2, { x: W / 2, y: 625 }));

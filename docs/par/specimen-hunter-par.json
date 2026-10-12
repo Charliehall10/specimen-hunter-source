@@ -1,7 +1,7 @@
 {
  "game": "Specimen Hunter",
- "version": "v1.0 demo",
- "generated": "2026-10-07T11:33:10.263Z",
+ "version": "v1.1 demo (baited swims)",
+ "generated": "2026-10-12T08:22:36.318Z",
  "maxWin": 5000,
  "lines": [
   [
@@ -142,7 +142,7 @@
   [
    "2lb 4oz",
    0.5,
-   300
+   394
   ],
   [
    "4lb 0oz",
@@ -377,172 +377,172 @@
    [
     "BOILIE",
     "BOILIE",
-    "NET",
-    "CASH",
-    "PELLET",
     "CATAPULT",
+    "MIRROR",
+    "PELLET",
+    "FLASK",
     "FLASK",
     "CASH",
-    "BIVVY",
+    "NET",
     "FLOAT",
-    "MIRROR",
+    "TENCH",
     "BIVVY",
     "CATAPULT",
     "NET",
     "CATAPULT",
     "FLOAT",
-    "BREAM",
-    "CORN",
-    "CORN",
     "ROACH",
     "CORN",
+    "BOILIE",
+    "BIVVY",
+    "CORN",
     "FLOAT",
     "CASH",
     "PELLET",
-    "TENCH",
+    "BREAM",
     "BOILIE",
+    "CORN",
     "PELLET",
-    "FLASK",
     "FLASK",
     "PELLET",
     "CORN",
     "CASH"
    ],
    [
-    "PELLET",
-    "BOILIE",
-    "FLASK",
-    "PELLET",
     "FLOAT",
-    "CORN",
-    "ALARM",
     "CASH",
-    "CORN",
-    "CASH",
-    "CATAPULT",
-    "WILD",
-    "CASH",
-    "PELLET",
-    "ALARM",
-    "MIRROR",
-    "CORN",
-    "ROACH",
-    "WILD",
     "NET",
-    "TENCH",
-    "BIVVY",
-    "FLOAT",
+    "CATAPULT",
+    "NET",
+    "WILD",
+    "MIRROR",
     "FLASK",
+    "TENCH",
+    "ALARM",
+    "PELLET",
+    "WILD",
+    "BOILIE",
+    "FLOAT",
     "BIVVY",
     "WILD",
+    "FLASK",
+    "CORN",
+    "CORN",
+    "CATAPULT",
+    "BOILIE",
+    "CASH",
+    "BREAM",
+    "ROACH",
+    "FLASK",
+    "BOILIE",
+    "PELLET",
+    "CASH",
+    "CORN",
+    "BIVVY",
+    "PELLET",
+    "ALARM"
+   ],
+   [
+    "PELLET",
+    "FLASK",
+    "NET",
+    "BIVVY",
+    "FLASK",
+    "NET",
     "CATAPULT",
     "BREAM",
+    "ALARM",
+    "FLOAT",
     "BOILIE",
-    "NET",
     "FLASK",
+    "ALARM",
+    "CASH",
+    "PELLET",
+    "PELLET",
+    "WILD",
+    "CASH",
+    "CORN",
+    "BIVVY",
+    "TENCH",
+    "CATAPULT",
+    "FLOAT",
+    "CORN",
+    "BOILIE",
+    "CORN",
+    "WILD",
+    "MIRROR",
+    "ROACH",
+    "BOILIE",
+    "WILD",
     "CASH"
    ],
    [
     "ALARM",
-    "BREAM",
+    "ROACH",
     "WILD",
     "BOILIE",
     "CATAPULT",
-    "WILD",
-    "ALARM",
-    "CASH",
-    "TENCH",
-    "PELLET",
-    "FLOAT",
-    "PELLET",
-    "BOILIE",
     "MIRROR",
     "WILD",
-    "CATAPULT",
+    "ALARM",
+    "BREAM",
+    "PELLET",
+    "FLOAT",
+    "CORN",
+    "BOILIE",
+    "TENCH",
+    "WILD",
+    "FLASK",
     "CASH",
     "BIVVY",
     "CORN",
     "FLOAT",
     "NET",
     "CASH",
-    "NET",
+    "CATAPULT",
     "PELLET",
     "CORN",
-    "ROACH",
-    "FLASK",
-    "FLASK",
     "BIVVY",
-    "CASH",
     "FLASK",
-    "CORN"
+    "FLASK",
+    "NET",
+    "CASH",
+    "PELLET",
+    "BOILIE"
    ],
    [
+    "WILD",
+    "FLASK",
+    "PELLET",
+    "FLOAT",
     "TENCH",
     "CASH",
     "WILD",
     "BOILIE",
-    "FLASK",
+    "FLOAT",
     "CASH",
+    "FLASK",
     "CORN",
-    "ALARM",
+    "BOILIE",
+    "PELLET",
+    "BIVVY",
+    "BREAM",
+    "FLASK",
+    "CATAPULT",
     "CATAPULT",
     "ROACH",
-    "ALARM",
-    "WILD",
-    "CATAPULT",
-    "FLOAT",
+    "CORN",
+    "PELLET",
+    "NET",
+    "CORN",
     "BIVVY",
-    "FLOAT",
     "PELLET",
-    "FLASK",
-    "CORN",
-    "NET",
-    "CASH",
     "BOILIE",
-    "CASH",
-    "PELLET",
-    "NET",
-    "BREAM",
-    "PELLET",
-    "WILD",
-    "CORN",
     "MIRROR",
-    "BIVVY",
-    "FLASK"
-   ],
-   [
-    "BOILIE",
-    "BOILIE",
-    "BIVVY",
     "NET",
-    "CASH",
-    "BIVVY",
-    "PELLET",
-    "PELLET",
-    "CASH",
-    "ROACH",
-    "WILD",
-    "MIRROR",
-    "BREAM",
-    "FLOAT",
-    "CASH",
-    "CORN",
-    "CASH",
-    "FLASK",
-    "PELLET",
-    "FLASK",
-    "CORN",
-    "NET",
-    "TENCH",
-    "CATAPULT",
-    "FLASK",
-    "CATAPULT",
     "FLOAT",
     "CATAPULT",
-    "WILD",
-    "BOILIE",
-    "FLOAT",
-    "CORN"
+    "CASH"
    ]
   ]
  },
@@ -637,7 +637,7 @@
   "free_spins": [
    {
     "FLOAT": 3,
-    "BOILIE": 3,
+    "BOILIE": 4,
     "CORN": 4,
     "PELLET": 4,
     "FLASK": 3,
@@ -650,11 +650,11 @@
     "MIRROR": 1,
     "WILD": 0,
     "ALARM": 0,
-    "CASH": 4
+    "CASH": 3
    },
    {
     "FLOAT": 2,
-    "BOILIE": 2,
+    "BOILIE": 3,
     "CORN": 3,
     "PELLET": 3,
     "FLASK": 3,
@@ -667,11 +667,11 @@
     "MIRROR": 1,
     "WILD": 3,
     "ALARM": 2,
-    "CASH": 4
+    "CASH": 3
    },
    {
     "FLOAT": 2,
-    "BOILIE": 2,
+    "BOILIE": 3,
     "CORN": 3,
     "PELLET": 3,
     "FLASK": 3,
@@ -684,11 +684,11 @@
     "MIRROR": 1,
     "WILD": 3,
     "ALARM": 2,
-    "CASH": 4
+    "CASH": 3
    },
    {
     "FLOAT": 2,
-    "BOILIE": 2,
+    "BOILIE": 3,
     "CORN": 3,
     "PELLET": 3,
     "FLASK": 3,
@@ -701,13 +701,13 @@
     "MIRROR": 1,
     "WILD": 3,
     "ALARM": 2,
-    "CASH": 4
+    "CASH": 3
    },
    {
     "FLOAT": 3,
     "BOILIE": 3,
     "CORN": 3,
-    "PELLET": 3,
+    "PELLET": 4,
     "FLASK": 3,
     "CATAPULT": 3,
     "NET": 2,
@@ -718,7 +718,7 @@
     "MIRROR": 1,
     "WILD": 2,
     "ALARM": 0,
-    "CASH": 4
+    "CASH": 3
    }
   ]
  },
@@ -747,54 +747,54 @@
    "FLASK": [
     0.00267791748046875,
     0.0005214214324951172,
-    9.655952453613281e-05
+    0.00009655952453613281
    ],
    "CATAPULT": [
     0.0019311904907226562,
     0.00030174851417541504,
-    5.587935447692871e-05
+    0.00005587935447692871
    ],
    "NET": [
     0.0012874603271484375,
     0.0002086162567138672,
-    2.9802322387695312e-05
+    0.000029802322387695312
    ],
    "BIVVY": [
     0.0012874603271484375,
     0.0002086162567138672,
-    2.9802322387695312e-05
+    0.000029802322387695312
    ],
    "ROACH": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ],
    "BREAM": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ],
    "TENCH": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ],
    "MIRROR": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ]
   },
   "free_spins": {
    "FLOAT": [
     0.0019311904907226562,
     0.00030174851417541504,
-    5.587935447692871e-05
+    0.00005587935447692871
    ],
    "BOILIE": [
-    0.0019311904907226562,
-    0.00030174851417541504,
-    5.587935447692871e-05
+    0.003570556640625,
+    0.0006952285766601562,
+    0.00012874603271484375
    ],
    "CORN": [
     0.003570556640625,
@@ -803,48 +803,48 @@
    ],
    "PELLET": [
     0.003570556640625,
-    0.0006952285766601562,
-    0.00012874603271484375
+    0.0006694793701171875,
+    0.0001544952392578125
    ],
    "FLASK": [
     0.00267791748046875,
     0.0005214214324951172,
-    9.655952453613281e-05
+    0.00009655952453613281
    ],
    "CATAPULT": [
     0.0019311904907226562,
     0.00030174851417541504,
-    5.587935447692871e-05
+    0.00005587935447692871
    ],
    "NET": [
     0.0012874603271484375,
     0.0002086162567138672,
-    2.9802322387695312e-05
+    0.000029802322387695312
    ],
    "BIVVY": [
     0.0012874603271484375,
     0.0002086162567138672,
-    2.9802322387695312e-05
+    0.000029802322387695312
    ],
    "ROACH": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ],
    "BREAM": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ],
    "TENCH": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ],
    "MIRROR": [
     0.00042724609375,
-    5.53131103515625e-05,
-    5.7220458984375e-06
+    0.0000553131103515625,
+    0.0000057220458984375
    ]
   }
  },
@@ -866,111 +866,179 @@
  },
  "exact": {
   "baseLineRtp": 0.5414019227027893,
-  "fsLineRtpPerSpin": 0.43873536586761475,
+  "fsLineRtpPerSpin": 0.4572004973888397,
   "pTriggerBase": 0.006591796875,
   "pRetriggerFs": 0.006591796875,
   "expectedFreeSpins": 10.340823024488765,
-  "expectedCashFishPerSpin": 1.875,
-  "meanFishValue": 3.0523504811810347,
-  "expectedFsSpinWin": 6.1618925180820545,
-  "expectedFeatureWinUncapped": 63.71904002540796,
-  "featureRtpUncapped": 0.42002296891748414,
-  "totalRtpUncapped": 0.9614248916202734
+  "expectedCashFishPerSpin": 1.40625,
+  "expectedSwimFishPerSpin": 0.28125,
+  "meanFishValue": 2.831499976987159,
+  "swimCount": 3,
+  "swimLadder": [
+   2,
+   4,
+   8,
+   16,
+   32
+  ],
+  "swimCatchDistribution": [
+   0.3637601544156269,
+   0.3844261440607835,
+   0.18512787576746167,
+   0.05404755225894368,
+   0.010809219796232769,
+   0.0016103133707530528,
+   0.00019491314332073991,
+   0.00002125587996630631,
+   0.000002287645137293226,
+   2.517835619717737e-7,
+   2.8237858510268224e-8,
+   3.217653570359108e-9,
+   3.728874515691925e-10,
+   4.386841230578126e-11,
+   5.226496981111618e-12,
+   6.296779716656629e-13,
+   7.661575713581199e-14,
+   9.403254323481159e-15,
+   1.1629686436335723e-15,
+   1.4481858569992568e-16,
+   1.8142998187008766e-17,
+   2.284985292979678e-18,
+   2.890462606853826e-19,
+   3.6684713475227444e-20,
+   5.3435893422245315e-21
+  ],
+  "expectedCatchesPerSwim": 0.969452158545818,
+  "expectedSwimMultiplierPerSwim": 3.081817869172519,
+  "expectedFsSpinWinOutsideSwims": 3.642637971499394,
+  "expectedSwimWin": 26.17850167692181,
+  "expectedFeatureWinUncapped": 63.846376282479795,
+  "featureRtpUncapped": 0.42086234365892444,
+  "totalRtpUncapped": 0.9622642663617138,
+  "capCost": 0.0008481649029764782,
+  "capCostCi95": 0.00010262995887160174,
+  "totalRtpWithCap": 0.9614161014587373
  },
  "simulation": {
   "rounds": 50000000,
   "seed": 2026,
-  "seconds": 57,
-  "rtp": 0.9605913499770057,
-  "ci95": 0.0020033257670726942,
-  "sd": 7.227373647055327,
-  "hitFrequency": 0.25495222,
-  "featureFrequency": 0.00657608,
-  "avgFreeSpins": 10.339016556976192,
-  "maxWin": 2066.6,
-  "cappedRounds": 0,
-  "belowStakeReturns": 0.11144686,
+  "seconds": 377,
+  "rtp": 0.9606714079772111,
+  "ci95": 0.0024572212324769976,
+  "sd": 8.86488671612271,
+  "hitFrequency": 0.2549386,
+  "featureFrequency": 0.00659004,
+  "avgFreeSpins": 10.339955447918374,
+  "maxWin": 5000,
+  "cappedRounds": 12,
+  "belowStakeReturns": 0.11147428,
   "splitRounds": 10000000,
-  "baseRtpSplit": 0.5414240400013342,
-  "featureRtpSplit": 0.41915826999994915,
+  "baseRtpSplit": 0.5409745500012949,
+  "featureRtpSplit": 0.4200929799999811,
+  "splitFeatures": 65538,
+  "swimShareOfFeatureWin": 0.4096117007239867,
+  "swimCatchDistribution": [
+   0.3640991994466315,
+   0.385033619172592,
+   0.18485458817785103,
+   0.053846623333028164,
+   0.010375659922487717,
+   0.0015512628805680166,
+   0.0002288748512313467,
+   0.000010172215610282075
+  ],
+  "bestSwimDistribution": [
+   0.05019988403674204,
+   0.37276084103878665,
+   0.3930544111812994,
+   0.14835667856815893,
+   0.030272513656199457,
+   0.005355671518813513
+  ],
+  "capSimulation": {
+   "features": 20000002,
+   "overCap": 502,
+   "featuresPerCapHit": 39840.64143426295,
+   "maxUncappedFeatureWin": 32515
+  },
   "distribution": [
    {
     "label": "No win",
-    "rounds": 36948439,
-    "probability": 0.73896878,
+    "rounds": 36948505,
+    "probability": 0.7389701,
     "rtpContribution": 0
    },
    {
     "label": "Below stake (0 < x < 1)",
-    "rounds": 5572343,
-    "probability": 0.11144686,
-    "rtpContribution": 0.08539646999930069
+    "rounds": 5573714,
+    "probability": 0.11147428,
+    "rtpContribution": 0.08542598399929671
    },
    {
     "label": "1x to <2x",
-    "rounds": 2744720,
-    "probability": 0.0548944,
-    "rtpContribution": 0.08100123600032573
+    "rounds": 2743009,
+    "probability": 0.05486018,
+    "rtpContribution": 0.08095999800032061
    },
    {
     "label": "2x to <5x",
-    "rounds": 3497297,
-    "probability": 0.06994594,
-    "rtpContribution": 0.21938005200324356
+    "rounds": 3496950,
+    "probability": 0.069939,
+    "rtpContribution": 0.21930479000325218
    },
    {
     "label": "5x to <10x",
-    "rounds": 745693,
-    "probability": 0.01491386,
-    "rtpContribution": 0.09952187400006485
+    "rounds": 747100,
+    "probability": 0.014942,
+    "rtpContribution": 0.09974693400006807
    },
    {
     "label": "10x to <20x",
-    "rounds": 124153,
-    "probability": 0.00248306,
-    "rtpContribution": 0.032393031999994555
+    "rounds": 135842,
+    "probability": 0.00271684,
+    "rtpContribution": 0.036232273999993105
    },
    {
     "label": "20x to <50x",
-    "rounds": 190445,
-    "probability": 0.0038089,
-    "rtpContribution": 0.1339846080000246
+    "rounds": 204462,
+    "probability": 0.00408924,
+    "rtpContribution": 0.1363402040000143
    },
    {
     "label": "50x to <100x",
-    "rounds": 141362,
-    "probability": 0.00282724,
-    "rtpContribution": 0.19134727400004473
+    "rounds": 110753,
+    "probability": 0.00221506,
+    "rtpContribution": 0.1516287560000053
    },
    {
     "label": "100x to <250x",
-    "rounds": 31601,
-    "probability": 0.00063202,
-    "rtpContribution": 0.08335302799999546
+    "rounds": 33729,
+    "probability": 0.00067458,
+    "rtpContribution": 0.09439900399999883
    },
    {
     "label": "250x to <500x",
-    "rounds": 3277,
-    "probability": 6.554e-05,
-    "rtpContribution": 0.020163404000000152
+    "rounds": 4578,
+    "probability": 0.00009156,
+    "rtpContribution": 0.02969988400000011
    },
    {
     "label": "500x to <1,000x",
-    "rounds": 21,
-    "probability": 4.2e-07,
-    "rtpContribution": 0.00023090600000000001
+    "rounds": 701,
+    "probability": 0.00001402,
+    "rtpContribution": 0.009056123999999995
    },
    {
     "label": "1,000x to <5,000x",
-    "rounds": 649,
-    "probability": 1.298e-05,
-    "rtpContribution": 0.013819466000000027
+    "rounds": 645,
+    "probability": 0.0000129,
+    "rtpContribution": 0.016677455999999993
    },
    {
     "label": "5,000x (cap)",
-    "rounds": 0,
-    "probability": 0,
-    "rtpContribution": 0
+    "rounds": 12,
+    "probability": 2.4e-7,
+    "rtpContribution": 0.0012
    }
   ]
  }

@@ -37,6 +37,12 @@ Sources: [Trademarkia "fish on" search](https://www.trademarkia.com/search/trade
 - **Specimen Hunter differs:** there is no collector symbol (every fish on screen pays immediately), and the
   trigger is the "Three Rods" bite-alarm mechanic (one alarm on each of reels 2, 3, 4) with retriggers.
   Lean on those differences in any pitch, and keep the look clearly your own (it is: all art is original).
+- **Added 12 Oct 2026, not yet searched: baited swims.** Free spins now bait three grid positions ("swims")
+  for the whole feature; a fish landing on one is multiplied, and that position's multiplier doubles with each
+  catch (x2 up to x32). Position-based multipliers that grow with repeated hits are an established idea in
+  other slots (for example the "multiplier spots" in Pragmatic Play's Sugar Rush, 2022, which double on each
+  win in the same spot). No patent search has been done for this mechanic yet; it must be included in the
+  freedom-to-operate opinion below.
 - **Closest patent found:** Aristocrat US11386753B2 ("Gaming machine and method for providing a feature
   game"; priority 2014, in force to 2035). Claim 1 requires *holding* prize-value symbols across
   re-spins and replacing the others (hold-and-respin). Specimen Hunter pays fish immediately with no holding,
@@ -46,7 +52,7 @@ Sources: [Trademarkia "fish on" search](https://www.trademarkia.com/search/trade
   common slot design (strong prior art).
 
 **Recommendation:** before a commercial deal, ask a patent attorney for a freedom-to-operate opinion
-on the free-spins cash-fish mechanic in the target markets (UK, EU, US). Budget for it, or let the
+on the free-spins cash-fish mechanic and the baited-swim multipliers in the target markets (UK, EU, US). Budget for it, or let the
 licensing studio do it (they usually do their own checks).
 
 Sources: [US11386753B2](https://patents.google.com/patent/US11386753B2/en),
