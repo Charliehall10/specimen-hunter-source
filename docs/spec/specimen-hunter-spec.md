@@ -1,4 +1,4 @@
-# Specimen Hunter: game spec and symbol sheet (v1.1 demo)
+# Specimen Hunter: game spec and symbol sheet (v1.2 demo)
 
 UK carp-fishing video slot. 5 reels × 3 rows, 10 fixed paylines, "Three Rods" free spins with weighed cash fish and three baited swims that multiply every fish caught in them (×2, doubling with each catch, up to ×32).
 Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" is a registered US slot trademark of King Show Games; see docs/legal). UK/EU trade mark check still to do. All figures are design figures from the in-house simulator, **not certified**.
@@ -9,11 +9,12 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 |---|---|
 | Grid / lines | 5×3, 10 fixed lines, left to right |
 | Stakes | £0.10 to £5.00 (10p steps to £3.00, then 50p steps; 34 levels) |
-| RTP (design) | 96.14% with the 5,000× cap: exact 96.23% uncapped (base 54.14%, free spins 42.09%) less 0.085% ± 0.010 lost to the cap |
+| RTP (design) | 96.16% with the 5,000× cap: exact 96.24% uncapped (base game incl. kingfisher 54.37%, free spins 41.87%) less 0.085% ± 0.010 lost to the cap |
 | Hit frequency | 25.5% |
 | Feature frequency | 1 in 152 spins |
-| Average feature win | 63.8× stake (10.3 spins on average), of which 26.2× from fish caught in swims |
-| Volatility (SD) | 8.9 (50M rounds, JS engine) to 9.1 (500M rounds, Python); was 7.2 before the swims |
+| Kingfisher | 1 in 300 base spins, average line win 8.9× stake |
+| Average feature win | 63.5× stake (10.3 spins on average), of which 26.1× from fish caught in swims |
+| Volatility (SD) | 9.0 (50M rounds, JS engine) to 9.15 (500M rounds, Python); was 7.2 before the swims |
 | Max win | 5,000× per round (cap). Reached about 1 in 6 million rounds (1 in 40,000 features); uncapped, a feature reached 32,515× in 20M simulated features |
 | Spin time | Minimum 2.5 s, fixed reel stops; no autoplay, turbo or quick stop |
 
@@ -30,19 +31,27 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 | Catapult | Mid | 1.5 | 3.6 | 9 |
 | Flask | Mid | 1.2 | 3 | 7.5 |
 | Sweetcorn | Low | 0.9 | 2.4 | 4.5 |
-| Pellets | Low | 0.9 | 2.4 | 4.5 |
+| Luncheon Meat | Low | 0.9 | 2.4 | 4.5 |
 | Boilies | Low | 0.6 | 1.5 | 3 |
 | Float | Low | 0.6 | 1.5 | 3 |
 
 - **Leather Carp (Wild)**: reels 2 to 5. Substitutes for all line symbols except Bite Alarm and Specimen Fish. No pay of its own.
 - **Bite Alarm (Scatter)**: reels 2, 3 and 4 only.
 - **Specimen Fish (Cash)**: free spins only. Carries a weight that maps to a fixed prize, multiplied if it lands in a baited swim.
+- Luncheon Meat replaced Pellets in v1.2 (same pays and positions; only the name and art changed).
+
+## Kingfisher (base game random event)
+
+- On any base-game spin there is a **1 in 300** chance the kingfisher visits. It flies in while the reels spin, then dives into 3, 4 or 5 spots (chance 60%, 30%, 10%) and turns them into **Leather Carp wilds**.
+- It always takes **reels 2, 3 and 4 on one random row**, so the paylines along that row get at least four of a kind (a guaranteed win unless a Bite Alarm sits in one of those spots). Extra spots are random elsewhere on reels 2 to 5.
+- A spot holding a Bite Alarm keeps the alarm, so the free-spins trigger rate is unchanged.
+- Average line win on a kingfisher spin: about 8.9× stake. Not available in free spins.
 
 ## Three Rods free spins
 
 - One Bite Alarm on each of reels 2, 3 and 4 in the same spin awards **10 free spins** at the triggering stake.
 - During free spins the reels use the free-spins strips. Every Specimen Fish that lands is weighed and its prize is paid at once (all fish on screen, every spin).
-- **Baited swims.** Before the first free spin the three rods each cast a spod of bait into a swim: 3 swims on 3 different reels, a random row on each (all placements equally likely). The swims stay in place for the whole feature, including retriggered spins.
+- **Baited swims.** Before the first free spin a catapult fires a pouch of boilies into each of three swims: 3 swims on 3 different reels, a random row on each (all placements equally likely). The swims stay in place for the whole feature, including retriggered spins.
 - A fish that lands in a swim pays its prize × the swim's multiplier, then the multiplier doubles. Every swim starts at ×2: 1st catch ×2, 2nd ×4, 3rd ×8, 4th ×16, 5th and later ×32. Fish outside the swims pay ×1.
 - Each swim shows a marker float and its next multiplier on the reels; the side panel lists every swim's multiplier and what it has paid.
 - Three Bite Alarms during free spins add **5 spins** (no limit other than the win cap).
@@ -52,7 +61,7 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 
 | Weight | Prize (× stake) | Weight share |
 |---|---|---|
-| 2lb 4oz | 0.5 | 397 |
+| 2lb 4oz | 0.5 | 396 |
 | 4lb 0oz | 1 | 250 |
 | 6lb 8oz | 2 | 170 |
 | 9lb 12oz | 3 | 110 |
@@ -65,20 +74,20 @@ Name "Specimen Hunter" (briefly renamed "Fish On!", reverted because "FISH ON!" 
 | **52lb 0oz (record)** | **250** | 0.5 |
 | **64lb 8oz (record)** | **1,000** | 0.1 |
 
-Mean fish value: 2.825× stake (before swim multipliers). The 2lb 4oz share was raised from 300 to 397 when the swims were added, to keep the RTP at 96.1%.
+Mean fish value: 2.827× stake (before swim multipliers). The 2lb 4oz share was raised from 300 to 396 as the swims and the kingfisher were added, to keep the RTP at 96.1%.
 
 ## Reel strips (symbol counts per 32-stop reel)
 
 | Symbol | Base R1 | R2 | R3 | R4 | R5 | Free spins R1 | R2 | R3 | R4 | R5 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Float | 5 | 3 | 3 | 3 | 4 | 3 | 2 | 2 | 2 | 3 |
-| Boilies | 5 | 3 | 3 | 3 | 4 | 4 | 3 | 3 | 3 | 3 |
+| Float | 6 | 3 | 3 | 3 | 4 | 4 | 2 | 2 | 2 | 3 |
+| Boilies | 6 | 3 | 3 | 3 | 4 | 5 | 3 | 3 | 3 | 3 |
 | Sweetcorn | 4 | 4 | 4 | 4 | 4 | 4 | 3 | 3 | 3 | 3 |
-| Pellets | 4 | 4 | 4 | 4 | 4 | 4 | 3 | 3 | 3 | 4 |
+| Luncheon Meat | 3 | 4 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 4 |
 | Flask | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 | Catapult | 3 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | 2 | 3 |
 | Landing Net | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
-| Bivvy | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| Bivvy | 1 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 |
 | Roach | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
 | Bream | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
 | Tench | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
@@ -86,6 +95,8 @@ Mean fish value: 2.825× stake (before swim multipliers). The 2lb 4oz share was 
 | Leather Carp (Wild) | 0 | 3 | 3 | 3 | 2 | 0 | 3 | 3 | 3 | 2 |
 | Bite Alarm | 0 | 2 | 2 | 2 | 0 | 0 | 2 | 2 | 2 | 0 |
 | Specimen Fish | – | – | – | – | – | 3 | 3 | 3 | 3 | 3 |
+
+Reel 1 lost one Luncheon Meat and one Bivvy (now a Float and Boilies) in v1.2 to pay for the kingfisher.
 
 Full strips: `client/strips.json` (exported by `math/specimen_hunter_sim.py --export-strips`).
 

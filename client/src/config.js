@@ -25,7 +25,7 @@ export const DEMO_BONUS = (import.meta.env?.VITE_DEMO_BONUS ?? 'true') !== 'fals
 
 export const SYMBOLS = {
   FLOAT: { name: 'Float', tier: 'low' }, BOILIE: { name: 'Boilies', tier: 'low' },
-  CORN: { name: 'Sweetcorn', tier: 'low' }, PELLET: { name: 'Pellets', tier: 'low' },
+  CORN: { name: 'Sweetcorn', tier: 'low' }, MEAT: { name: 'Luncheon Meat', tier: 'low' },
   FLASK: { name: 'Flask', tier: 'mid' }, CATAPULT: { name: 'Catapult', tier: 'mid' },
   NET: { name: 'Landing Net', tier: 'mid' }, BIVVY: { name: 'Bivvy', tier: 'mid' },
   ROACH: { name: 'Roach', tier: 'high' }, BREAM: { name: 'Bream', tier: 'high' },

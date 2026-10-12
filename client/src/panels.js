@@ -1,19 +1,21 @@
 // Info (paytable / feature / paylines / rules), history, reality check and title screens.
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { W, H, SYMBOLS, LINE_COLOURS, MIN_SPIN_MS, REALITY_CHECK_MIN, DEMO_BONUS, money } from './config.js';
-import { PAY, PAYLINES, FISH, MAX_WIN, SWIM_LADDER } from './engine.js';
+import { PAY, PAYLINES, FISH, MAX_WIN, SWIM_LADDER, KINGFISHER_CHANCE } from './engine.js';
 import { getArtScale } from './art.js';
 import { Modal, Button, label } from './ui.js';
 
-const PAYING = ['MIRROR', 'TENCH', 'BREAM', 'ROACH', 'BIVVY', 'NET', 'CATAPULT', 'FLASK', 'CORN', 'PELLET', 'BOILIE', 'FLOAT'];
+const PAYING = ['MIRROR', 'TENCH', 'BREAM', 'ROACH', 'BIVVY', 'NET', 'CATAPULT', 'FLASK', 'CORN', 'MEAT', 'BOILIE', 'FLOAT'];
 const body = (text, size = 17, wrap = 960, x = 0, y = 0, fill = 0xdbe7ec, ax = 0.5) =>
   label(text, size, fill, { wrap, x, y, ax, ay: 0, stroke: { width: 0 }, lineHeight: size * 1.45, style: { fontWeight: 'normal', align: ax === 0 ? 'left' : 'center' } });
 
+// The kingfisher texture is already at design size, unlike the symbol textures
+function bird(kf, x, y, s) { const sp = new Sprite(kf); sp.anchor.set(0.5); sp.scale.set(s); sp.position.set(x, y); return sp; }
 function icon(textures, sym, x, y, s = 0.52) {
   const sp = new Sprite(textures[sym]); sp.anchor.set(0.5); sp.scale.set(s / getArtScale()); sp.position.set(x, y); return sp;
 }
 
-function paytablePage(textures, stake) {
+function paytablePage(textures, stake, kf) {
   const p = new Container();
   p.addChild(body(`Values shown for your current stake of ${money(stake)}. Line wins pay left to right on 10 fixed lines.`, 16, 1000, 0, -228));
   PAYING.forEach((sym, i) => {
@@ -22,9 +24,10 @@ function paytablePage(textures, stake) {
     const v = PAY[sym].map(u => money(u / 10 * stake));
     p.addChild(body(`${SYMBOLS[sym].name}\n5× ${v[2]}\n4× ${v[1]}\n3× ${v[0]}`, 15, 140, x + 8, y - 44, 0xffffff, 0));
   });
-  p.addChild(icon(textures, 'WILD', -400, 220, 0.5), icon(textures, 'ALARM', 110, 220, 0.5));
-  p.addChild(body('LEATHER CARP is WILD. It substitutes for all line symbols except the Bite Alarm and Specimen Fish.', 15, 330, -345, 188, 0xffffff, 0));
-  p.addChild(body('BITE ALARM appears on reels 2, 3 and 4 only. One on each of those reels starts the Three Rods feature.', 15, 330, 165, 188, 0xffffff, 0));
+  p.addChild(icon(textures, 'WILD', -500, 222, 0.46), icon(textures, 'ALARM', -140, 222, 0.46), bird(kf, 214, 222, 0.5));
+  p.addChild(body('LEATHER CARP is WILD. It substitutes for all line symbols except the Bite Alarm and Specimen Fish.', 14, 250, -450, 186, 0xffffff, 0));
+  p.addChild(body('BITE ALARM appears on reels 2, 3 and 4 only. One on each of those reels starts the Three Rods feature.', 14, 250, -90, 186, 0xffffff, 0));
+  p.addChild(body(`KINGFISHER: now and then (1 in ${Math.round(1 / KINGFISHER_CHANCE)} base spins) it dives into 3 to 5 spots on reels 2 to 5 and turns them WILD.`, 14, 250, 264, 186, 0x9fe8ff, 0));
   return p;
 }
 
@@ -80,6 +83,7 @@ function rulesPage() {
     '• Returns smaller than your stake are shown as returns, not as wins.',
     `• Your session time and net position are always on screen. A reality check appears every ${REALITY_CHECK_MIN} minutes.`,
     '• Free spins are played at the stake that triggered them. Swim positions are chosen at random when the feature starts.',
+    `• Kingfisher: on any base game spin there is a 1 in ${Math.round(1 / KINGFISHER_CHANCE)} chance it dives into 3 to 5 random spots on reels 2 to 5 and turns them into Leather Carp wilds. A spot holding a Bite Alarm keeps the alarm.`,
     '• Malfunction voids all pays and plays.',
     '• Demo money only. This build uses a non-certified random number generator and is not for real-money play.',
     DEMO_BONUS ? '• DEMO BONUS starts the free spins at no cost. It exists only for demonstrations and is removed in release builds.' : '',
@@ -87,9 +91,9 @@ function rulesPage() {
   return p;
 }
 
-export function openInfo(stage, textures, stake, onClose) {
+export function openInfo(stage, textures, stake, onClose, kf) {
   const m = new Modal(1120, 640, null, { onClose });
-  const pages = [['PAYTABLE', () => paytablePage(textures, stake)], ['FREE SPINS', () => featurePage(textures, stake)],
+  const pages = [['PAYTABLE', () => paytablePage(textures, stake, kf)], ['FREE SPINS', () => featurePage(textures, stake)],
     ['PAYLINES', paylinesPage], ['RULES', rulesPage]];
   const holder = new Container(); holder.y = 20; m.body.addChild(holder);
   const tabs = [];
@@ -113,7 +117,7 @@ export function openHistory(stage, history, onClose) {
   history.slice(0, 18).forEach((h, i) => {
     const y = -196 + i * 26;
     const t = h.time.toLocaleTimeString('en-GB');
-    const result = h.feature ? `Free spins (${h.fsSpins})` : h.win >= h.stake ? 'Win' : h.win > 0 ? 'Return' : '—';
+    const result = h.feature ? `Free spins (${h.fsSpins})` : h.kingfisher ? 'Kingfisher' : h.win >= h.stake ? 'Win' : h.win > 0 ? 'Return' : '—';
     [[t, -250], [money(h.stake), -110], [money(h.win), 40], [result, 210]].forEach(([s, x]) =>
       m.body.addChild(label(s, 15, h.win >= h.stake ? 0xffe066 : 0xffffff, { x, y, stroke: { width: 0 } })));
   });
@@ -138,19 +142,20 @@ export function sessionEnded(stage, minutes, net, onNew) {
   stage.addChild(m);
 }
 
-export function titleScreen(stage, logo, textures) {
+export function titleScreen(stage, logo, textures, kf) {
   return new Promise(res => {
     const c = new Container();
     const dim = new Graphics().rect(-W, -H, W * 3, H * 3).fill({ color: 0x02080c, alpha: 0.86 }); dim.eventMode = 'static'; dim.cursor = 'pointer';
-    const lg = new Sprite(logo); lg.anchor.set(0.5); lg.scale.set(0.62); lg.position.set(W / 2, 170);
-    c.addChild(dim, lg, label('A UK carp-fishing slot · 5 reels · 10 lines', 22, 0xdbe7ec, { x: W / 2, y: 240 }));
-    ['ALARM', 'CASH', 'MIRROR'].forEach((s, i) => c.addChild(icon(textures, s, W / 2 - 280 + i * 280, 380, 0.9)));
-    [['Three Rods', 'alarms on reels 2, 3 & 4'], ['Baited swims', 'fish in a swim pay ×2, ×4, ×8 …'], ['Record fish', 'up to 1,000× stake']]
+    const lg = new Sprite(logo); lg.anchor.set(0.5); lg.scale.set(0.64); lg.position.set(W / 2, 162);
+    c.addChild(dim, lg, label('A UK carp-fishing slot · 5 reels · 10 lines', 21, 0xdbe7ec, { x: W / 2, y: 318 }));
+    const xs = [-405, -135, 135, 405].map(d => W / 2 + d);
+    c.addChild(icon(textures, 'ALARM', xs[0], 410, 0.78), icon(textures, 'CASH', xs[1], 410, 0.78), bird(kf, xs[2], 410, 0.8), icon(textures, 'MIRROR', xs[3], 410, 0.78));
+    [['Three Rods', 'alarms on reels 2, 3 & 4'], ['Baited swims', 'fish in a swim pay ×2, ×4, ×8 …'], ['Kingfisher', 'dives in and spots wilds'], ['Record fish', 'up to 1,000× stake']]
       .forEach(([a, b], i) => {
-        c.addChild(label(a, 22, 0xf2c14e, { x: W / 2 - 280 + i * 280, y: 466 }), label(b, 15, 0xdbe7ec, { x: W / 2 - 280 + i * 280, y: 492 }));
+        c.addChild(label(a, 22, 0xf2c14e, { x: xs[i], y: 488 }), label(b, 15, 0xdbe7ec, { x: xs[i], y: 514 }));
       });
-    const tap = label('TAP OR PRESS SPACE TO START', 26, 0xffffff, { x: W / 2, y: 580 });
-    c.addChild(tap, label('Demo money only · 18+ · Play responsibly', 14, 0x9fb7c2, { x: W / 2, y: 625 }));
+    const tap = label('TAP OR PRESS SPACE TO START', 26, 0xffffff, { x: W / 2, y: 590 });
+    c.addChild(tap, label('Demo money only · 18+ · Play responsibly', 14, 0x9fb7c2, { x: W / 2, y: 632 }));
     stage.addChild(c);
     let t = 0; const blink = setInterval(() => { t++; tap.alpha = 0.55 + 0.45 * Math.abs(Math.sin(t / 6)); }, 50);
     const go = () => { clearInterval(blink); window.removeEventListener('keydown', key); c.destroy({ children: true }); res(); };

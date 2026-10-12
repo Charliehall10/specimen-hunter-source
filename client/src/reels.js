@@ -46,6 +46,8 @@ export class Reel {
     else { slot.weight.text = ''; slot.value.text = ''; }
   }
   refreshLabels() { this.slots.forEach(s => s.entry && this.setEntry(s, s.entry)); }
+  // Swap what a stopped reel shows in one row (the kingfisher turning a spot wild)
+  replace(row, entry) { this.band[row] = entry; this.setEntry(this.slots[row], entry); }
   layout() {
     const base = Math.floor(this.pos), frac = this.pos - base;
     this.slots.forEach((s, j) => {

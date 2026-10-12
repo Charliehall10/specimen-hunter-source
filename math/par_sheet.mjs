@@ -5,13 +5,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import { Worker } from 'node:worker_threads';
-import { makeEngine, PAY, PAYLINES, FISH, MAX_WIN, SWIM_COUNT, SWIM_LADDER, swimMult } from '../client/src/engine.js';
+import { makeEngine, PAY, PAYLINES, FISH, MAX_WIN, SWIM_COUNT, SWIM_LADDER, swimMult, KINGFISHER_CHANCE, KINGFISHER_WILDS } from '../client/src/engine.js';
 
 const ROOT = new URL('..', import.meta.url);
 const strips = JSON.parse(fs.readFileSync(new URL('client/strips.json', ROOT)));
 const N = Number(process.argv[2] ?? 50_000_000), SEED = Number(process.argv[3] ?? 2026);
 const PAYING = Object.keys(PAY);
-const SYMS = ['FLOAT', 'BOILIE', 'CORN', 'PELLET', 'FLASK', 'CATAPULT', 'NET', 'BIVVY', 'ROACH', 'BREAM', 'TENCH', 'MIRROR', 'WILD', 'ALARM', 'CASH'];
+const SYMS = ['FLOAT', 'BOILIE', 'CORN', 'MEAT', 'FLASK', 'CATAPULT', 'NET', 'BIVVY', 'ROACH', 'BREAM', 'TENCH', 'MIRROR', 'WILD', 'ALARM', 'CASH'];
 
 // ---------------------------------------------------------------- exact strip maths
 const counts = set => strips[set].map(reel => Object.fromEntries(SYMS.map(s => [s, reel.filter(x => x === s).length])));
@@ -100,8 +100,31 @@ const swimCatches = cells.map(([r, k]) => swimCatchDistribution(r, k))
 const cumMult = n => { let m = 0; for (let c = 0; c < n; c++) m += swimMult(c); return m; };
 const swimMultPerSwim = swimCatches.reduce((a, pn, n) => a + pn * cumMult(n), 0);   // E[sum of multipliers paid]
 const fsSpinWin = lineRtp(fsLine) + (cashPerSpin - swimCashPerSpin) * meanFish;      // everything except swim catches
+// Kingfisher: on a base spin it turns N spots wild: reels 2-4 on one row, plus N-3 more at random on reels 2-5
+// (an alarm in a spot stays an alarm). Every payline crosses one cell per reel, so for each possible set of spots
+// the line wins follow from each reel's own distribution: a chosen cell is wild (or the reel's alarm), the rest
+// are as on the strip. Average over every row and every set of extra spots.
+const lineValue = d => { const lp = lineProbs(d); return PAYING.reduce((a, S) => a + lp[S].reduce((b, pk, i) => b + pk * PAY[S][i] / 10, 0), 0); };
+const KF_CELLS = [1, 2, 3, 4].flatMap(r => [0, 1, 2].map(k => [r, k]));
+const wildCell = r => Object.fromEntries(SYMS.map(s => [s, s === 'WILD' ? 1 - baseP[r].ALARM : s === 'ALARM' ? baseP[r].ALARM : 0]));
+const kingfisherSets = n => [0, 1, 2].flatMap(row => {
+  const forced = [[1, row], [2, row], [3, row]];
+  const pool = KF_CELLS.filter(([r, k]) => !forced.some(([fr, fk]) => fr === r && fk === k));
+  const extra = (m, from = 0, acc = []) => acc.length === m ? [acc] : pool.slice(from).flatMap((c, i) => extra(m, from + i + 1, [...acc, c]));
+  return extra(n - 3).map(e => [...forced, ...e]);
+});
+const kingfisherEvByN = Object.fromEntries(KINGFISHER_WILDS.map(([n]) => {
+  const sets = kingfisherSets(n);
+  const total = sets.reduce((a, set) => a + PAYLINES.reduce((b, pl) =>
+    b + lineValue(pl.map((row, r) => set.some(([cr, ck]) => cr === r && ck === row) ? wildCell(r) : baseP[r])), 0), 0);
+  return [n, total / sets.length];
+}));
+const kingfisherEv = KINGFISHER_WILDS.reduce((a, [n, w]) => a + w * kingfisherEvByN[n], 0);
+
 const exact = {
-  baseLineRtp: lineRtp(baseLine), fsLineRtpPerSpin: lineRtp(fsLine), pTriggerBase: pTrigBase, pRetriggerFs: pTrigFs,
+  baseLineRtpNoKingfisher: lineRtp(baseLine), kingfisherChance: KINGFISHER_CHANCE, kingfisherWilds: KINGFISHER_WILDS,
+  kingfisherEvByN, kingfisherEv,
+  baseLineRtp: (1 - KINGFISHER_CHANCE) * lineRtp(baseLine) + KINGFISHER_CHANCE * kingfisherEv, fsLineRtpPerSpin: lineRtp(fsLine), pTriggerBase: pTrigBase, pRetriggerFs: pTrigFs,
   expectedFreeSpins: expFsSpins, expectedCashFishPerSpin: cashPerSpin, expectedSwimFishPerSpin: swimCashPerSpin, meanFishValue: meanFish,
   swimCount: SWIM_COUNT, swimLadder: SWIM_LADDER, swimCatchDistribution: swimCatches,
   expectedCatchesPerSwim: swimCatches.reduce((a, pn, n) => a + pn * n, 0), expectedSwimMultiplierPerSwim: swimMultPerSwim,
@@ -111,6 +134,8 @@ exact.expectedFeatureWinUncapped = expFsSpins * fsSpinWin + exact.expectedSwimWi
 exact.featureRtpUncapped = pTrigBase * exact.expectedFeatureWinUncapped;
 exact.totalRtpUncapped = exact.baseLineRtp + exact.featureRtpUncapped;
 const exactReport = () => {
+  console.log(`Kingfisher: 1 in ${(1 / KINGFISHER_CHANCE).toFixed(0)}, line win on those spins ${kingfisherEv.toFixed(3)}x ` +
+    `(by spots ${Object.entries(kingfisherEvByN).map(([n, v]) => n + ': ' + v.toFixed(2) + 'x').join(', ')}); base lines without it ${(exact.baseLineRtpNoKingfisher * 100).toFixed(3)}%`);
   console.log(`Exact (uncapped): base lines ${(exact.baseLineRtp * 100).toFixed(3)}%  feature ${(exact.featureRtpUncapped * 100).toFixed(3)}%  total ${(exact.totalRtpUncapped * 100).toFixed(3)}%`);
   console.log(`Exact: trigger 1 in ${(1 / pTrigBase).toFixed(1)}, E[free spins] ${expFsSpins.toFixed(3)}, E[feature win] ${exact.expectedFeatureWinUncapped.toFixed(2)}x ` +
     `(swims ${exact.expectedSwimWin.toFixed(2)}x), mean fish ${meanFish.toFixed(4)}x, catches per swim ${exact.expectedCatchesPerSwim.toFixed(4)} ` +

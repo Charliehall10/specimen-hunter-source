@@ -3,7 +3,7 @@
   "createdOnFiles": { "v": 1, "at": "2026-10-07T11:50:00Z" },
   "lists": "css",
   "title": "Specimen Hunter: pitch deck",
-  "order": ["cover", "hook", "glance", "threerods", "freespins", "bigwins", "maths", "gbrules", "tech", "different", "status", "contact"],
+  "order": ["cover", "hook", "glance", "threerods", "freespins", "kingfisher", "bigwins", "maths", "gbrules", "tech", "different", "status", "contact"],
   "sections": {
     "intro": { "description": "What the game is and the moment it is built around", "start": "cover" },
     "game": { "description": "How it plays: the numbers, the trigger, the feature and the big moments", "start": "glance" },

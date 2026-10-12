@@ -18,26 +18,34 @@ In Specimen Hunter, **a bite alarm on each of reels 2, 3 and 4 triggers the Thre
 
 ## Baited swims
 
-Before the free spins start, the three rods each cast a spod of bait into a **swim** on the reels, and the swims stay put for the whole feature. **Specimen Fish** land with real carp weights and **pay the moment they land**. A fish caught in a baited swim pays **×2**, and that swim's multiplier doubles with every catch: ×4, ×8, ×16, up to **×32**. Weights run from a 2lb 4oz tiddler (0.5× stake) up to two record fish: **52lb 0oz (250×)** and **64lb 8oz (1,000×)**.
+Before the free spins start, a catapult fires bait into three **swims** on the reels, and the swims stay put for the whole feature. **Specimen Fish** land with real carp weights and **pay the moment they land**. A fish caught in a baited swim pays **×2**, and that swim's multiplier doubles with every catch: ×4, ×8, ×16, up to **×32**. Weights run from a 2lb 4oz tiddler (0.5× stake) up to two record fish: **52lb 0oz (250×)** and **64lb 8oz (1,000×)**.
 
 | | |
 |---|---|
-| ![A 19lb 8oz fish lands in a x16 swim: £8 becomes £128](media/big-fish.jpg) | ![Monster Catch big-win count-up](media/huge-catch.jpg) |
+| ![A 14lb 0oz fish lands in a x32 swim: £5 becomes £160](media/big-fish.jpg) | ![Monster Catch big-win count-up](media/huge-catch.jpg) |
+| ![A catapult baits the swims](media/catapult.jpg) | ![The free spins rules: swim multipliers and fish weights](media/fish-table.jpg) |
+
+## The kingfisher
+
+Now and then in the base game a **kingfisher** flies in while the reels spin, then dives into the water and turns a row of reels 2 to 4 (and sometimes a spot or two more) into wild Leather Carp, so it always brings a win.
+
+![The kingfisher dives in and turns a row wild](media/kingfisher.jpg)
 
 ## The numbers
 
 | | |
 |---|---|
-| **RTP** | **96.14%**: exact strip maths, less the measured cost of the win cap |
+| **RTP** | **96.16%**: exact strip maths, less the measured cost of the win cap |
 | Free spins trigger | 1 in 152 spins |
-| Average free spins win | 63.8× stake (26.2× of it from the swims) |
+| Kingfisher | 1 in 300 base spins, average win 8.9× stake |
+| Average free spins win | 63.5× stake (26.1× of it from the swims) |
 | Base-game hit rate | 25.5% |
-| Volatility | 8.9 (standard deviation, × stake) |
+| Volatility | 9.0 (standard deviation, × stake) |
 | Maximum win | 5,000× per round, reached about 1 in 6 million rounds |
 | Layout | 5 reels × 3 rows, 10 fixed lines |
 | Stakes | 10p to £5 (£2 maximum for players aged 18 to 24) |
 
-Backed by a full **PAR sheet**: exact strip maths including the swim multipliers, the win cap's cost measured over 20 million features, and a 50-million-round simulation of the game engine (simulated RTP 96.07% ± 0.25%).
+Backed by a full **PAR sheet**: exact strip maths including the swim multipliers, the win cap's cost measured over 20 million features, and a 50-million-round simulation of the game engine (simulated RTP 96.30% ± 0.25%).
 
 ## Built for UK rules from day one
 
@@ -51,7 +59,7 @@ Backed by a full **PAR sheet**: exact strip maths including the swim multipliers
 
 - **One engine, two places.** The same tested maths engine decides outcomes in the browser demo and on a dependency-free game server. The server handles sessions, stake limits, a whole-pence wallet and safe retries, so a dropped connection can never charge a player twice.
 - **100% original assets.** Every symbol, the lakeside scenery, the music and the sound effects are generated in code (PixiJS 8 and Web Audio). There are no licensed art or audio files.
-- **Tested.** 18 automated tests cover the maths (including the swim multipliers and the win cap), wallet, stake limits and API, and the PAR sheet matches the engine with zero difference.
+- **Tested.** 20 automated tests cover the maths (including the swim multipliers, the kingfisher and the win cap), wallet, stake limits and API, and the PAR sheet matches the engine with zero difference.
 - **Runs anywhere:** in a browser, on a phone in landscape, or as a desktop app.
 
 ## About this repository

@@ -31,6 +31,7 @@ function localClient() {
       return { ...s };
     },
     async play(stake, force = false) {
+      if (![false, true, 'feature', 'kingfisher'].includes(force)) throw Object.assign(new Error('Unknown demo option'), { code: 'FORCE' });
       if (force && !s.demo) throw Object.assign(new Error('Demo bonus is not available'), { code: 'FORBIDDEN' });
       if (!s.stakes.includes(stake)) throw Object.assign(new Error('Stake not allowed'), { code: 'STAKE' });
       const cost = force ? 0 : stake;

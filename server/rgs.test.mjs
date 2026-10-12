@@ -64,6 +64,16 @@ test('demo bonus only when the server runs in demo mode, and it is free', () => 
   assert.equal(r.cost, 0); assert.ok(r.round.freeSpins.length >= 10); assert.equal(r.balance, 1000 + r.win);
 });
 
+test('demo kingfisher is free, demo-only, and unknown demo options are refused', () => {
+  const rgs = createRgs({ demo: true });
+  const s = rgs.createSession({ balance: 1000 });
+  const r = rgs.spin({ sessionId: s.sessionId, stake: 100, force: 'kingfisher' });
+  assert.equal(r.cost, 0); assert.ok(r.round.base.kingfisher); assert.equal(r.balance, 1000 + r.win);
+  assert.equal(code(() => rgs.spin({ sessionId: s.sessionId, stake: 100, force: 'jackpot' })), 'FORCE');
+  const live = createRgs(); const t = live.createSession();
+  assert.equal(code(() => live.spin({ sessionId: t.sessionId, stake: 100, force: 'kingfisher' })), 'FORBIDDEN');
+});
+
 test('a retried request (same requestId) is not charged twice', () => {
   const rgs = createRgs();
   const s = rgs.createSession({ balance: 1000 });

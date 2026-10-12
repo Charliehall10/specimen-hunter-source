@@ -7,7 +7,7 @@ import { connect, launchProfile } from './gameClient.js';
 import { W, H, CW, CH, GAP, X0, Y0, REEL_W, REEL_H, STOP_AT, ANTICIPATION_MS, START_BALANCE,
   REALITY_CHECK_MIN, DEMO_BONUS, LINE_COLOURS, BIG_WINS, SYMBOLS, GAME_NAME, money, sleep } from './config.js';
 import { makeSymbolTextures, makeSceneTexture, makeFrameTexture, makeLogoTexture, makeDotTexture, makeSwimPatchTexture, makeMarkerTexture,
-  getArtScale } from './art.js';
+  makeCatapultTextures, makeBaitTexture, makeKingfisherTextures, getArtScale } from './art.js';
 import { Reel, tween, tickTweens } from './reels.js';
 import { initAudio, sfx, isMuted, setMuted, isMusicOn, setMusic, setMood, duckMusic } from './audio.js';
 import { label, Button, SpinButton, valueBox, Modal } from './ui.js';
@@ -39,8 +39,7 @@ function fit() {
 }
 window.addEventListener('resize', fit); fit();
 
-const logo = makeLogoTexture();
-const logoSp = new Sprite(logo); logoSp.anchor.set(0.5); logoSp.scale.set(0.42); logoSp.position.set(W / 2, 46); root.addChild(logoSp);
+const logoSp = new Sprite(makeLogoTexture('header')); logoSp.anchor.set(0.5); logoSp.scale.set(0.68); logoSp.position.set(W / 2, 50); root.addChild(logoSp);
 
 const { texture: frameTex, pad } = makeFrameTexture();
 const frame = new Sprite(frameTex); frame.position.set(X0 - pad, Y0 - pad); root.addChild(frame);
@@ -142,14 +141,17 @@ const showMusic = () => { musicBtn.text.style.fill = isMusicOn() ? 0xffffff : 0x
 [infoBtn, histBtn, musicBtn, sndBtn].forEach((b, i) => { b.position.set(1068 + i * 56, 678); root.addChild(b); });
 let demoBtn = null;
 let ageBtn = null;
+let kfBtn = null;
 if (DEMO_BONUS && session.demo) {
-  demoBtn = new Button('DEMO BONUS', 160, 44, () => round(true), { fill: 0x9a4a12, size: 17 });
-  demoBtn.position.set(95, 430); root.addChild(demoBtn);
-  root.addChild(label('demo only · free\nremoved in release builds', 11, 0x9fb7c2, { x: 95, y: 470, stroke: { width: 2, color: 0x000000 } }));
+  demoBtn = new Button('DEMO BONUS', 160, 40, () => round(true), { fill: 0x9a4a12, size: 16 });
+  demoBtn.position.set(95, 414); root.addChild(demoBtn);
+  kfBtn = new Button('DEMO KINGFISHER', 160, 40, () => round('kingfisher'), { fill: 0x12607a, size: 14 });
+  kfBtn.position.set(95, 460); root.addChild(kfBtn);
+  root.addChild(label('demo only · free\nremoved in release builds', 11, 0x9fb7c2, { x: 95, y: 496, stroke: { width: 2, color: 0x000000 } }));
   // Demo of operator-set stake caps: GB limit is £2 per spin for 18-24s, £5 for 25+
   ageBtn = new Button('', 160, 40, () => switchAgeBand(), { fill: 0x1d4152, size: 13 });
-  ageBtn.position.set(95, 528); root.addChild(ageBtn);
-  root.addChild(label('demo: operator stake cap', 11, 0x9fb7c2, { x: 95, y: 558, stroke: { width: 2, color: 0x000000 } }));
+  ageBtn.position.set(95, 544); root.addChild(ageBtn);
+  root.addChild(label('demo: operator stake cap', 11, 0x9fb7c2, { x: 95, y: 574, stroke: { width: 2, color: 0x000000 } }));
 }
 const modeT = label(game.mode === 'server' ? 'Outcomes: game server' : 'Outcomes: in-browser engine (demo)', 11, 0x9fb7c2, { x: 18, y: 40, ax: 0, ay: 0, stroke: { width: 2, color: 0x000000 } });
 root.addChild(modeT);
@@ -175,6 +177,7 @@ function hud() {
   spinBtn.enabled = ready; minus.enabled = ready && stakeIdx > 0; plus.enabled = ready && stakeIdx < STAKES.length - 1;
   infoBtn.enabled = !busy && modals === 0; histBtn.enabled = !busy && modals === 0;
   if (demoBtn) demoBtn.enabled = ready;
+  if (kfBtn) kfBtn.enabled = ready;
   if (ageBtn) { ageBtn.text.text = `PLAYER ${profile.ageBand} · MAX ${money(session.maxStake / 100)}`; ageBtn.enabled = ready; }
 }
 // Demo only: switch the player's age band to show the operator stake cap working
@@ -199,7 +202,7 @@ function bump(d) {
 }
 function modal(m) { modals++; hud(); return m; }
 const modalClosed = () => { modals = Math.max(0, modals - 1); hud(); };
-const showInfo = () => { if (!busy && !modals) modal(openInfo(root, tex, stake(), modalClosed)); };
+const showInfo = () => { if (!busy && !modals) modal(openInfo(root, tex, stake(), modalClosed, kfTex.up)); };
 const showHistory = () => { if (!busy && !modals) modal(openHistory(root, history, modalClosed)); };
 
 // ------------------------------------------------------------------ effects
@@ -269,7 +272,44 @@ const filler = (set, r) => () => {
   return { sym, fish: sym === 'CASH' ? cheapFish() : null };
 };
 
+// ------------------------------------------------------------------ kingfisher
+// Rarely, a kingfisher flies in while the reels spin, then dives into a few spots and turns them into wilds.
+// The reels first land on what was there (spot.was) so the player sees each spot change.
+const kfTex = makeKingfisherTextures(2);
+const bird = new Sprite(kfTex.up); bird.anchor.set(0.6, 0.5); bird.visible = false; bird.flap = false; root.addChild(bird);
+const face = (dx, s = 0.9) => { bird.scale.set(dx < 0 ? -s : s, s); };
+async function kingfisherArrives() {
+  bird.texture = kfTex.up; bird.visible = true; bird.flap = true; bird.rotation = 0; bird.alpha = 1; face(1);
+  sfx.kingfisher();
+  msg.text = 'A kingfisher has spotted some big fish!'; msg.style.fill = 0x7fe0ff;
+  await tween(1200, t => bird.position.set(-120 + (W / 2 + 120) * t, 70 + 26 * t - Math.sin(t * Math.PI * 2) * 14), t => 1 - (1 - t) ** 2);
+}
+async function kingfisherDives(spots) {
+  for (const w of spots) {
+    const c = reels[w.reel].cellCentre(w.row), x0 = bird.x, y0 = bird.y, dx = c.x - x0, dy = c.y - y0;
+    bird.flap = false; bird.texture = kfTex.dive; face(dx);
+    bird.rotation = dx < 0 ? Math.atan2(-dy, -dx) : Math.atan2(dy, dx);
+    sfx.dive();
+    await tween(360, t => bird.position.set(x0 + dx * t, y0 + dy * t * t), t => t);
+    sfx.splash(); burst(c.x, c.y, 26, 0xcfefff, { speed: 6, up: 5, life: 800 });
+    if (w.was !== 'ALARM') {
+      reels[w.reel].replace(w.row, { sym: 'WILD', fish: null });
+      sfx.wildLand(); burst(c.x, c.y, 18, 0xffe066, { speed: 5, up: 3, life: 900 });
+      const slot = reels[w.reel].slotAt(w.row);
+      tween(420, t => slot.view.scale.set(1 + 0.22 * Math.sin(t * Math.PI)), t => t);
+    }
+    bird.texture = kfTex.up; bird.flap = true; bird.rotation = 0; face(1);
+    await tween(340, t => bird.position.set(c.x + 30 * t, c.y + (96 - c.y) * (1 - (1 - t) ** 2)));
+  }
+  const x0 = bird.x, y0 = bird.y;
+  await tween(900, t => { bird.position.set(x0 + (W + 160 - x0) * t * t, y0 - 70 * t); });
+  bird.visible = false; bird.flap = false;
+  msg.text = '';
+}
+
 async function spinReels(set, res) {
+  const kf = res.kingfisher;
+  const arrival = kf ? kingfisherArrives() : null;
   const stops = [...STOP_AT];
   const tease = res.alarmReels[0] && res.alarmReels[1];
   if (tease) { stops[3] += ANTICIPATION_MS; stops[4] += ANTICIPATION_MS; }
@@ -277,7 +317,7 @@ async function spinReels(set, res) {
   sfx.spinStart();
   let alarms = 0;
   const done = reels.map((reel, r) => {
-    const col = res.grid[r].map((sym, k) => ({ sym, fish: res.cash[r + ',' + k] ?? null }));
+    const col = res.grid[r].map((sym, k) => ({ sym: kf?.spots.find(w => w.reel === r && w.row === k)?.was ?? sym, fish: res.cash[r + ',' + k] ?? null }));
     return reel.spinTo(col, stops[r], t0, filler(set, r)).then(() => {
       sfx.reelStop(r);
       if (r >= 1 && r <= 3 && res.alarmReels[r - 1]) {
@@ -289,6 +329,7 @@ async function spinReels(set, res) {
   });
   await Promise.all(done);
   await sleep(220);   // let the landing bounce settle
+  if (kf) { await arrival; await kingfisherDives(kf.spots); }
 }
 let glowOn = 0;
 function tickGlow(now) {
@@ -337,35 +378,40 @@ function clearSwims() {
   swims = [];
 }
 
-// Before the first free spin the three rods each cast a spod of bait into a swim
+// Before the first free spin a catapult fires a pouch of boilies into each swim
+const catTex = makeCatapultTextures(2), baitTex = makeBaitTexture(2);
 async function baitSwims(list) {
   if (patchScale !== getArtScale()) { patchTex?.destroy(true); patchTex = makeSwimPatchTexture(); patchScale = getArtScale(); }
   swims = list.map(w => makeSwim(w, patchTex));
   updateSwimRows();
-  msg.text = 'Baiting three swims'; msg.style.fill = 0xffd36a;
-  for (const [i, s] of swims.entries()) {
-    const from = { x: lights[i].x, y: lights[i].y }, to = reels[s.reel].cellCentre(s.row);
-    setLight(i, true); sfx.cast();
-    const spod = new Graphics().ellipse(0, 0, 13, 6).fill(0xff8c1a).stroke({ width: 2, color: 0x2a1200 })
-      .poly([8, -5, 17, -10, 17, 10, 8, 5]).fill(0xfff3d6).stroke({ width: 1.5, color: 0x2a1200 });
-    fxLayer.addChild(spod);
-    let px = from.x, py = from.y;
-    await tween(620, t => {
-      const x = from.x + (to.x - from.x) * t, y = from.y + (to.y - from.y) * t - Math.sin(t * Math.PI) * 150;
-      spod.position.set(x, y); spod.rotation = Math.atan2(y - py, x - px) + Math.PI; px = x; py = y;
+  const rest = H - 100, cat = new Sprite(catTex.loaded); cat.anchor.set(0.5, 0.75); cat.scale.set(1.45); cat.position.set(W / 2, H + 140);
+  fxLayer.addChild(cat);
+  await tween(420, t => { cat.y = H + 120 + (rest - H - 120) * t; }, backOut);
+  for (const s of swims) {
+    const to = reels[s.reel].cellCentre(s.row);
+    const aim = Math.max(-0.7, Math.min(0.7, Math.atan2(to.x - cat.x, cat.y - 60 - to.y))), r0 = cat.rotation;
+    await tween(220, t => { cat.rotation = r0 + (aim - r0) * t; });
+    await tween(240, t => { cat.scale.set(1.45, 1.45 * (1 - 0.14 * t)); });     // draw back
+    cat.texture = catTex.empty; cat.scale.set(1.45); sfx.twang(); sfx.cast();
+    const from = { x: cat.x + Math.sin(aim) * 72, y: cat.y - Math.cos(aim) * 72 };
+    const bait = new Sprite(baitTex); bait.anchor.set(0.5); bait.scale.set(1.3); fxLayer.addChild(bait);
+    await tween(560, t => {
+      bait.position.set(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t - Math.sin(t * Math.PI) * 170);
+      bait.rotation = t * 7; bait.scale.set(1.3 - 0.45 * t);
     }, t => t);
-    spod.destroy();
+    bait.destroy();
     sfx.splash();
     burst(to.x, to.y, 28, 0xcfefff, { speed: 6, up: 5, life: 800 }); burst(to.x, to.y, 12, 0xffc04d, { speed: 3, up: 2, life: 900 });
     s.flash = 1;
     tween(450, t => { s.patch.alpha = t; s.ring.alpha = t; });
     tween(380, t => s.marker.scale.set(t * 0.82), backOut);
     tween(380, t => s.badge.scale.set(t), backOut);
-    setLight(i, false);
-    await sleep(160);
+    cat.texture = catTex.loaded;
+    await sleep(140);
   }
-  await sleep(450);
-  msg.text = '';
+  await tween(380, t => { cat.rotation *= 1 - t; cat.y = rest + (H + 140 - rest) * t; });
+  cat.destroy();
+  await sleep(250);
 }
 
 async function collectFish(res, st, state) {
@@ -536,7 +582,7 @@ async function round(force = false) {
   else if (win < st - 1e-9) { msg.text = `Returned ${money(win)}`; msg.style.fill = 0x9fb7c2; }
   else { msg.text = `WIN ${money(win)}`; msg.style.fill = 0xffe066; burst(W / 2, 591, 16, 0xffe066, { speed: 4, up: 3 }); }
   if (base.lines.length && !base.trigger) { drawLines(base.lines, win >= st ? 1 : 0.45); startIdle(base.lines, st, win >= st ? 1 : 0.45); }
-  history.unshift({ time: new Date(), stake: st, win, feature: base.trigger, fsSpins, demo: force });
+  history.unshift({ time: new Date(), stake: st, win, feature: base.trigger, kingfisher: !!base.kingfisher, fsSpins, demo: !!force });
   if (history.length > 100) history.pop();
   busy = false; hud();
   if (balance < STAKES[0]) resetBtn.visible = true;
@@ -575,16 +621,22 @@ app.ticker.add(() => {
   const now = performance.now(), dt = Math.min(3, (now - last) / 16.67); last = now;
   reels.forEach(r => r.update(now));
   tickTweens(now); tickParticles(now, dt); tickGlow(now); tickIdle(now); tickSwims(now);
+  if (bird.flap) bird.texture = Math.floor(now / 90) % 2 ? kfTex.up : kfTex.down;
   spinBtn.update(now);
   mist.x = Math.sin(now / 9000) * 60; mist.alpha = 0.7 + 0.3 * Math.sin(now / 4000);
 });
 setInterval(clock, 1000); clock();
+// Dev builds only: lets automated runs (screenshots, the gameplay video) wait until a round has finished
+if (import.meta.env.DEV) window.__specimenHunter = {
+  idle: () => !busy && modals === 0,
+  render: on => on ? app.ticker.add(app.render, app, -25) : app.ticker.remove(app.render, app),   // skip drawing while fast-forwarding
+};
 
 // Opening grid
 reels.forEach((r, i) => r.show([0, 1, 2].map(filler('base', i))));
 hud();
 modals++; hud();
-await titleScreen(root, logo, tex);
+await titleScreen(root, makeLogoTexture('title'), tex, kfTex.up);
 initAudio();
 setMusic(prefs.music !== false); showMusic();
 modals--; hud();

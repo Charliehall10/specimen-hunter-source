@@ -13,7 +13,7 @@ export const STAKE_LADDER = [...Array.from({ length: 30 }, (_, i) => (i + 1) * 1
 // GB online slots stake limits per game cycle (Gambling Commission licence condition, 2025):
 // £2 for players aged 18 to 24, £5 for 25 and over. The operator tells us the player's band.
 export const GB_LIMITS = { '18-24': 200, '25+': 500 };
-export const GAME_INFO = { id: 'specimen-hunter', rtp: 96.1, maxWinMultiplier: MAX_WIN, lines: 10, reels: '5x3' };
+export const GAME_INFO = { id: 'specimen-hunter', rtp: 96.16, maxWinMultiplier: MAX_WIN, lines: 10, reels: '5x3' };
 
 export class GameError extends Error {
   constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; }
@@ -47,9 +47,11 @@ export function createRgs({ demo = false, rand = cryptoRand, now = () => new Dat
   }
 
   // One complete game round. requestId makes retries safe: the same id returns the same result.
+  // force (demo servers only): true / 'feature' starts the free spins, 'kingfisher' sends the kingfisher.
   function spin({ sessionId, stake, requestId, force = false }) {
     const s = getSession(sessionId);
     if (requestId && s.requests.has(requestId)) return s.requests.get(requestId);
+    if (![false, true, 'feature', 'kingfisher'].includes(force)) throw new GameError('FORCE', 'Unknown demo option');
     if (force && !demo) throw new GameError('FORBIDDEN', 'Demo bonus is not available', 403);
     if (!s.stakes.includes(stake)) throw new GameError('STAKE', `Stake not allowed (max ${s.maxStake}p)`);
     const cost = force ? 0 : stake;   // demo bonus is free
@@ -64,7 +66,7 @@ export function createRgs({ demo = false, rand = cryptoRand, now = () => new Dat
       stake, cost, win, balance: s.balance, demoBonus: !!force, round,
     };
     s.history.unshift({ roundId: result.roundId, time: result.time, stake, cost, win, balance: s.balance,
-      feature: round.freeSpins.length > 0, freeSpins: round.freeSpins.length, capped: round.capped });
+      feature: round.freeSpins.length > 0, freeSpins: round.freeSpins.length, kingfisher: !!round.base.kingfisher, capped: round.capped });
     if (s.history.length > 500) s.history.pop();
     if (requestId) {
       s.requests.set(requestId, result);

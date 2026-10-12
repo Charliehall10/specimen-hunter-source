@@ -51,6 +51,11 @@ export const sfx = {
   // Baited swims: the spod whooshing out, a fish caught in a swim, the swim multiplier stepping up
   cast: () => { noise(0.5, { vol: 0.16, filter: 1600, q: 0.6 }); tone(1900, 0.4, { type: 'sine', vol: 0.05, slideTo: 500 }); },
   swimCatch: level => [659, 831, 988, 1319].forEach((f, i) => tone(f * 2 ** (Math.min(level, 4) * 2 / 12), 0.32, { type: 'triangle', vol: 0.16, at: i * 0.055 })),
+  twang: () => { tone(340, 0.2, { type: 'sawtooth', vol: 0.07, slideTo: 110 }); noise(0.05, { vol: 0.12, filter: 3200 }); },
+  // Kingfisher: its high piping call, the dive, and a spot turning wild
+  kingfisher: () => [0, 1, 2, 3].forEach(k => tone(3500 + (k % 2) * 400, 0.08, { type: 'sine', vol: 0.06, at: k * 0.13, slideTo: 4300 })),
+  dive: () => { noise(0.3, { vol: 0.12, filter: 2600, q: 0.6 }); tone(1600, 0.3, { type: 'sine', vol: 0.05, slideTo: 400 }); },
+  wildLand: () => [523, 784, 1047].forEach((f, i) => tone(f, 0.22, { type: 'triangle', vol: 0.14, at: i * 0.05 })),
   multUp: level => [0, 4, 7, 12].forEach((st, i) => tone(523 * 2 ** ((st + Math.min(level, 5) * 2) / 12), 0.16, { type: 'square', vol: 0.06, at: 0.05 + i * 0.05 })),
 };
 

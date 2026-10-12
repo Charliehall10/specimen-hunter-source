@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-SPECIMEN HUNTER - v1.1 math simulator
+SPECIMEN HUNTER - v1.2 math simulator
 5x3, 10 fixed paylines, "Three Rods" scatter (bite alarms, reels 2-4 only),
 free spins with fish-weight cash prizes and three baited swims that multiply
-the fish caught in them (x2, doubling with every catch, up to x32).
+the fish caught in them (x2, doubling with every catch, up to x32), and a rare
+base-game kingfisher that turns 3-5 spots into wilds (always reels 2-4 on one row).
 
 Usage:
     python specimen_hunter_sim.py --spins 50000000
@@ -22,7 +23,7 @@ from multiprocessing import Pool, cpu_count
 # =====================================================================
 # CONFIG
 # =====================================================================
-SYMS = ["FLOAT", "BOILIE", "CORN", "PELLET",          # low
+SYMS = ["FLOAT", "BOILIE", "CORN", "MEAT",          # low
         "FLASK", "CATAPULT", "NET", "BIVVY",          # mid
         "ROACH", "BREAM", "TENCH", "MIRROR",          # high
         "WILD",                                       # leather carp
@@ -30,7 +31,7 @@ SYMS = ["FLOAT", "BOILIE", "CORN", "PELLET",          # low
         "CASH"]                                       # fish with weight (free spins only)
 ID = {s: i for i, s in enumerate(SYMS)}
 WILD, ALARM, CASH, MIRROR = ID["WILD"], ID["ALARM"], ID["CASH"], ID["MIRROR"]
-LOW = ["FLOAT", "BOILIE", "CORN", "PELLET"]
+LOW = ["FLOAT", "BOILIE", "CORN", "MEAT"]
 
 # Paylines: row index (0=top, 1=middle, 2=bottom) for reels 1..5
 PAYLINES = [
@@ -42,7 +43,7 @@ NLINES = len(PAYLINES)
 # Pays are multiples of the LINE bet (total bet / 10) for 3, 4, 5 of a kind
 PAYTABLE = {
     "FLOAT":    (6, 15, 30),    "BOILIE":   (6, 15, 30),
-    "CORN":     (9, 24, 45),    "PELLET":   (9, 24, 45),
+    "CORN":     (9, 24, 45),    "MEAT":   (9, 24, 45),
     "FLASK":    (12, 30, 75),   "CATAPULT": (15, 36, 90),
     "NET":      (18, 45, 120),  "BIVVY":    (24, 60, 150),
     "ROACH":    (30, 75, 180),  "BREAM":    (36, 90, 240),
@@ -51,15 +52,15 @@ PAYTABLE = {
 
 # Reel strips, as symbol counts per reel (each reel = 32 stops)
 BASE_COUNTS = [
-    dict(FLOAT=5, BOILIE=5, CORN=4, PELLET=4, FLASK=3, CATAPULT=3, NET=2, BIVVY=2,
+    dict(FLOAT=6, BOILIE=6, CORN=4, MEAT=3, FLASK=3, CATAPULT=3, NET=2, BIVVY=1,
          ROACH=1, BREAM=1, TENCH=1, MIRROR=1),
-    dict(FLOAT=3, BOILIE=3, CORN=4, PELLET=4, FLASK=3, CATAPULT=2, NET=2, BIVVY=2,
+    dict(FLOAT=3, BOILIE=3, CORN=4, MEAT=4, FLASK=3, CATAPULT=2, NET=2, BIVVY=2,
          ROACH=1, BREAM=1, TENCH=1, MIRROR=1, WILD=3, ALARM=2),
-    dict(FLOAT=3, BOILIE=3, CORN=4, PELLET=4, FLASK=3, CATAPULT=2, NET=2, BIVVY=2,
+    dict(FLOAT=3, BOILIE=3, CORN=4, MEAT=4, FLASK=3, CATAPULT=2, NET=2, BIVVY=2,
          ROACH=1, BREAM=1, TENCH=1, MIRROR=1, WILD=3, ALARM=2),
-    dict(FLOAT=3, BOILIE=3, CORN=4, PELLET=4, FLASK=3, CATAPULT=2, NET=2, BIVVY=2,
+    dict(FLOAT=3, BOILIE=3, CORN=4, MEAT=4, FLASK=3, CATAPULT=2, NET=2, BIVVY=2,
          ROACH=1, BREAM=1, TENCH=1, MIRROR=1, WILD=3, ALARM=2),
-    dict(FLOAT=4, BOILIE=4, CORN=4, PELLET=4, FLASK=3, CATAPULT=3, NET=2, BIVVY=2,
+    dict(FLOAT=4, BOILIE=4, CORN=4, MEAT=4, FLASK=3, CATAPULT=3, NET=2, BIVVY=2,
          ROACH=1, BREAM=1, TENCH=1, MIRROR=1, WILD=2),
 ]
 # Free spins strips: same as base but N low symbols per reel swapped for CASH fish
@@ -68,7 +69,7 @@ FS_CASH_PER_REEL = [3, 3, 3, 3, 3]
 # Fish weights (display only) -> value in multiples of TOTAL BET, with probability weight.
 # The weight shown to the player is a fixed lookup of the value, so it is never misleading.
 FISH = [  # (label, multiplier, relative weight)
-    ("2lb 4oz",   0.5, 394),   ("4lb 0oz",   1, 250),  ("6lb 8oz",   2, 170),
+    ("2lb 4oz",   0.5, 396),   ("4lb 0oz",   1, 250),  ("6lb 8oz",   2, 170),
     ("9lb 12oz",  3, 110),     ("14lb 0oz",  5,  80),  ("19lb 8oz",  8,  38),
     ("26lb 0oz", 12,  22.5),   ("32lb 8oz", 20,  13),   ("38lb 12oz", 50,  6.5),
     ("45lb 4oz", 100,  1.75),  ("52lb 0oz", 250,  0.5), ("64lb 8oz", 1000, 0.1),  # record fish
@@ -76,6 +77,14 @@ FISH = [  # (label, multiplier, relative weight)
 FISH_VALS = np.array([f[1] for f in FISH], dtype=np.float64)
 FISH_P = np.array([f[2] for f in FISH], dtype=np.float64)
 FISH_P /= FISH_P.sum()
+
+# Kingfisher (base game only): on a base spin, with chance KF_CHANCE, a kingfisher turns KF_WILDS spots
+# (spots, chance) into Leather Carp wilds: always reels 2, 3 and 4 on one random row, so every row's payline
+# gets at least four of a kind, plus any extra spots at random elsewhere on reels 2-5.
+# A Bite Alarm in a chosen spot stays an alarm, so the feature trigger rate is unchanged.
+KF_CHANCE = 1 / 300
+KF_WILDS = [(3, 0.6), (4, 0.3), (5, 0.1)]
+KF_CELLS = [(r, k) for r in range(1, 5) for k in range(3)]
 
 FS_START_SPINS = 10
 FS_RETRIGGER_SPINS = 5
@@ -177,6 +186,27 @@ def line_wins(win):
     return total / NLINES
 
 
+def kingfisher(win, rng):
+    """Apply the kingfisher in place to base-game windows; returns which spins it visited."""
+    hit = rng.random(win.shape[0]) < KF_CHANCE
+    idx = np.flatnonzero(hit)
+    if idx.size:
+        spots = rng.choice([n for n, _ in KF_WILDS], size=idx.size, p=[w for _, w in KF_WILDS])
+        row = rng.integers(0, 3, idx.size)
+        key = rng.random((idx.size, len(KF_CELLS)))
+        for c, (r, k) in enumerate(KF_CELLS):   # reels 2-4 on the chosen row always come first
+            if r <= 3:
+                key[row == k, c] = -1.0
+        order = np.argsort(key, axis=1)
+        rank = np.empty_like(order)
+        rank[np.arange(idx.size)[:, None], order] = np.arange(len(KF_CELLS))
+        chosen = rank < spots[:, None]
+        for c, (r, k) in enumerate(KF_CELLS):
+            rows = idx[chosen[:, c]]
+            win[rows, r, k] = np.where(win[rows, r, k] == ALARM, ALARM, WILD)
+    return hit
+
+
 def three_rods(win):
     """True if an alarm shows on each of reels 2, 3 and 4."""
     a = (win[:, 1:4, :] == ALARM).any(axis=2)
@@ -237,7 +267,7 @@ def run_chunk(args):
     bm, fm = Machine(base_s), Machine(fs_s)
     rng = np.random.default_rng(seed)
     st = dict(n=0, sum=0.0, sumsq=0.0, hits=0, trig=0, base_sum=0.0, fs_sum=0.0,
-              fs_spins=0, fs_retrig=0, maxwin=0.0, capped=0, ldw=0, swim_sum=0.0,
+              fs_spins=0, fs_retrig=0, maxwin=0.0, capped=0, ldw=0, swim_sum=0.0, kf=0, kf_sum=0.0,
               hist=np.zeros(len(BUCKET_NAMES), dtype=np.int64),
               swim_catches=np.zeros(8, dtype=np.int64))
     done = 0
@@ -245,7 +275,10 @@ def run_chunk(args):
     while done < n_spins:
         m = min(batch, n_spins - done)
         win = bm.spin(m, rng)
+        kf = kingfisher(win, rng)
         base = line_wins(win)
+        st["kf"] += int(kf.sum())
+        st["kf_sum"] += base[kf].sum()
         total = base.copy()
         trig = np.flatnonzero(three_rods(win))
         if trig.size:
@@ -287,11 +320,12 @@ def report(st):
     var = st["sumsq"] / n - mean ** 2
     sd = var ** 0.5
     se = sd / n ** 0.5
-    print(f"\n=== SPECIMEN HUNTER v1.1 | {n:,} spins ===")
+    print(f"\n=== SPECIMEN HUNTER v1.2 | {n:,} spins ===")
     print(f"Total RTP            {mean*100:7.3f}%   (95% CI +/- {1.96*se*100:.3f}%)")
     print(f"  base line wins     {st['base_sum']/n*100:7.3f}%")
     print(f"  free spins         {(mean - st['base_sum']/n)*100:7.3f}%")
     print(f"Hit frequency        {st['hits']/n*100:7.2f}%   (base line win on any spin)")
+    print(f"Kingfisher           1 in {n/max(st['kf'],1):,.0f}   (avg line win on those spins {st['kf_sum']/max(st['kf'],1):.2f}x bet)")
     print(f"Any return < 1x bet  {st['ldw']/n*100:7.2f}%   (LDW zone: must NOT be celebrated)")
     t = st["trig"]
     print(f"Feature frequency    1 in {n/max(t,1):,.0f}   ({t:,} triggers)")
@@ -330,6 +364,7 @@ def theory():
     p_cash = [s.count(CASH) / len(s) for s in fs]
     print("Free spins: chance of a fish in any one swim per spin =", [round(x, 4) for x in p_cash], "(by reel)")
     print("Swim ladder (catch 1, 2, 3 ...):", [f"x{int(m)}" for m in SWIM_LADDER])
+    print(f"Kingfisher: 1 in {1/KF_CHANCE:.0f} base spins, wild spots {KF_WILDS}")
     print("Exact feature RTP with swims: run  node math/par_sheet.mjs")
 
 

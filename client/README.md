@@ -11,8 +11,10 @@ npm run build          # demo build in dist/ (includes DEMO BONUS)
 npm run build:release  # build without the DEMO BONUS button
 ```
 
-While `npm run dev` is running, http://localhost:5173/art-sheet.html shows every symbol and the baited-swim
-patch on the reel background, for checking artwork without playing. It is not part of the game build.
+While `npm run dev` is running, http://localhost:5173/art-sheet.html shows every symbol, the baited-swim patch,
+both logos, the kingfisher, the baiting catapult and the app icon, for checking artwork without playing. It is not
+part of the game build. `art-sheet.html?icon=512` shows just the app icon at 512 px (`desktop/icon.png` and
+`public/favicon.png` were saved from it).
 
 Controls: Space / Enter spin, arrow keys change stake, I info, H history, N music on/off, M mute all sound.
 
@@ -22,7 +24,7 @@ Controls: Space / Enter spin, arrow keys change stake, I info, H history, N musi
 |---|---|
 | `src/engine.js` | Game maths (JS port of `math/specimen_hunter_sim.py`). Decides every outcome. |
 | `strips.json` | Reel strips exported from the simulator. |
-| `src/main.js` | Game flow: rounds, free spins and baited swims, win presentation, session tracking. |
+| `src/main.js` | Game flow: rounds, the kingfisher, free spins and baited swims, win presentation, session tracking. |
 | `src/reels.js` | Scrolling reels with fixed stop times (no slam stop). |
 | `src/art.js` | Canvas-drawn symbols (fish built from species shapes, tackle with outlines), lakeside scenes, reel background, swims, frame and logo. |
 | `src/audio.js` | WebAudio sound effects. |

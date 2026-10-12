@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeEngine, cryptoRand, PAY, PAYLINES, MAX_WIN, FISH, SWIM_COUNT, swimMult } from './engine.js';
+import { makeEngine, cryptoRand, PAY, PAYLINES, MAX_WIN, FISH, SWIM_COUNT, swimMult, KINGFISHER_CHANCE } from './engine.js';
 
 const strips = JSON.parse(fs.readFileSync(new URL('../strips.json', import.meta.url)));
 function mulberry32(a) {
@@ -113,6 +113,29 @@ test('a round that reaches the 5,000x cap stops there and pays exactly the cap',
   assert.equal(d.total, MAX_WIN);
   const totals = d.freeSpins.reduce((acc, r) => [...acc, acc[acc.length - 1] + r.total], [d.base.total]);
   assert.ok(totals[totals.length - 1] >= MAX_WIN && totals[totals.length - 2] < MAX_WIN, 'the feature ends on the spin that reaches the cap');
+});
+
+test('kingfisher: base game only, reels 2-4 on one row plus up to 2 more spots, spots turn wild unless they held an alarm', () => {
+  const E = makeEngine(strips, mulberry32(12));
+  let visits = 0; const N = 300000;
+  for (let i = 0; i < N; i++) {
+    const r = E.spin('base');
+    if (!r.kingfisher) continue;
+    visits++;
+    const spots = r.kingfisher.spots;
+    assert.ok(spots.length >= 3 && spots.length <= 5);
+    assert.equal(new Set(spots.map(w => w.reel + ',' + w.row)).size, spots.length);
+    assert.ok([0, 1, 2].some(row => [1, 2, 3].every(reel => spots.some(w => w.reel === reel && w.row === row))), 'reels 2-4 on one row');
+    for (const w of spots) {
+      assert.ok(w.reel >= 1 && w.reel <= 4 && w.row >= 0 && w.row <= 2);
+      assert.equal(r.grid[w.reel][w.row], w.was === 'ALARM' ? 'ALARM' : 'WILD');
+    }
+  }
+  const expected = N * KINGFISHER_CHANCE;
+  assert.ok(Math.abs(visits - expected) < 5 * Math.sqrt(expected), `kingfisher visited ${visits} times, expected about ${expected}`);
+  for (let i = 0; i < 20000; i++) assert.equal(E.spin('fs').kingfisher, null);
+  const forced = E.spin('base', 'kingfisher');
+  assert.ok(forced.kingfisher);
 });
 
 test('base game rounds carry no swims', () => {

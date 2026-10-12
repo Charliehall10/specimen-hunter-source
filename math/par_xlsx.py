@@ -29,11 +29,11 @@ fill_key = PatternFill('solid', fgColor='FFF2CC')
 thin = Border(bottom=Side(style='thin', color='BBBBBB'))
 PCT, PROB, MULT, INT = '0.000%', '0.0000000', '#,##0.00"x"', '#,##0'
 
-SYMS = ['FLOAT', 'BOILIE', 'CORN', 'PELLET', 'FLASK', 'CATAPULT', 'NET', 'BIVVY', 'ROACH', 'BREAM', 'TENCH', 'MIRROR', 'WILD', 'ALARM', 'CASH']
-NAMES = {'FLOAT': 'Float', 'BOILIE': 'Boilies', 'CORN': 'Sweetcorn', 'PELLET': 'Pellets', 'FLASK': 'Flask', 'CATAPULT': 'Catapult',
+SYMS = ['FLOAT', 'BOILIE', 'CORN', 'MEAT', 'FLASK', 'CATAPULT', 'NET', 'BIVVY', 'ROACH', 'BREAM', 'TENCH', 'MIRROR', 'WILD', 'ALARM', 'CASH']
+NAMES = {'FLOAT': 'Float', 'BOILIE': 'Boilies', 'CORN': 'Sweetcorn', 'MEAT': 'Luncheon Meat', 'FLASK': 'Flask', 'CATAPULT': 'Catapult',
          'NET': 'Landing Net', 'BIVVY': 'Bivvy', 'ROACH': 'Roach', 'BREAM': 'Bream', 'TENCH': 'Tench', 'MIRROR': 'Mirror Carp',
          'WILD': 'Leather Carp (Wild)', 'ALARM': 'Bite Alarm (Scatter)', 'CASH': 'Specimen Fish (Cash)'}
-TIER = {s: 'Low' for s in ['FLOAT', 'BOILIE', 'CORN', 'PELLET']} | {s: 'Mid' for s in ['FLASK', 'CATAPULT', 'NET', 'BIVVY']} | \
+TIER = {s: 'Low' for s in ['FLOAT', 'BOILIE', 'CORN', 'MEAT']} | {s: 'Mid' for s in ['FLASK', 'CATAPULT', 'NET', 'BIVVY']} | \
        {s: 'High' for s in ['ROACH', 'BREAM', 'TENCH', 'MIRROR']}
 PAYING = list(D['paytable'].keys())
 
@@ -154,6 +154,8 @@ def line_sheet(set_key, title):
 
 
 base_total_row = line_sheet('base', 'Line Wins Base')
+wb['Line Wins Base']['A3'] = 'Ordinary base spins, before the kingfisher (see the Kingfisher sheet for how it changes the base game).'
+wb['Line Wins Base']['A3'].font = f_note
 fs_total_row = line_sheet('free_spins', 'Line Wins Free Spins')
 
 # ------------------------------------------------------------------ Fish values
@@ -173,8 +175,31 @@ put(fv, 6 + n, 1, 'Mean fish value', bold=True); put(fv, 6 + n, 5, f'=SUM(E5:E{4
 note(fv, 8 + n, 'Source: FISH table in client/src/engine.js. Record fish: 52lb 0oz (250x) and 64lb 8oz (1,000x).')
 widths(fv, [14, 15, 13, 13, 20, 12])
 
-# ------------------------------------------------------------------ Baited swims
+# ------------------------------------------------------------------ Kingfisher
 X = D['exact']
+kf = wb.create_sheet('Kingfisher')
+kf['A1'] = 'Kingfisher (base game random event)'; kf['A1'].font = f_title
+note(kf, 2, 'On a base spin the kingfisher may visit: it turns reels 2, 3 and 4 on one random row into Leather Carp wilds, plus any extra '
+            'spots at random elsewhere on reels 2-5. A spot holding a Bite Alarm keeps the alarm.')
+put(kf, 4, 1, 'Chance per base spin'); put(kf, 4, 2, X['kingfisherChance'], f_in, PROB); note(kf, 4, 'engine.js KINGFISHER_CHANCE', 3)
+put(kf, 5, 1, 'Kingfisher: 1 in'); put(kf, 5, 2, '=1/B4', f_calc, '#,##0')
+header(kf, 7, ['Wild spots', 'Chance', 'Line win on that spin (x stake)', 'Chance x win'])
+for i, (n, w) in enumerate(X['kingfisherWilds']):
+    r = 8 + i
+    put(kf, r, 1, n, f_calc, INT); put(kf, r, 2, w, f_in, '0.00'); put(kf, r, 3, X['kingfisherEvByN'][str(n)], f_in, '0.0000"x"')
+    put(kf, r, 4, f'=B{r}*C{r}', f_calc, '0.0000"x"')
+kend = 7 + len(X['kingfisherWilds'])
+put(kf, kend + 1, 1, 'Average line win when the kingfisher visits', bold=True)
+put(kf, kend + 1, 4, f'=SUM(D8:D{kend})', f_calc, '0.0000"x"', bold=True)
+put(kf, kend + 3, 1, 'Base line RTP without the kingfisher'); put(kf, kend + 3, 2, f"='Line Wins Base'!E{base_total_row}", f_link, PCT)
+put(kf, kend + 4, 1, 'Base game RTP with the kingfisher', bold=True)
+put(kf, kend + 4, 2, f'=(1-B4)*B{kend + 3}+B4*D{kend + 1}', f_calc, PCT, bold=True)
+note(kf, kend + 6, 'Column C is exact: for every row and every set of extra spots, each payline\'s chance follows from each reel\'s own symbol '
+                   'chances (a chosen cell is wild, or the reel\'s alarm), averaged over all of them (math/par_sheet.mjs).')
+KF_BASE = f"Kingfisher!$B${kend + 4}"
+widths(kf, [44, 14, 30, 16])
+
+# ------------------------------------------------------------------ Baited swims
 sw = wb.create_sheet('Baited Swims')
 sw['A1'] = 'Baited swims (free spins collect multiplier)'; sw['A1'].font = f_title
 note(sw, 2, f"Before the first free spin {X['swimCount']} swims are baited on {X['swimCount']} different reels (random row on each) and stay put for the feature. "
@@ -277,16 +302,18 @@ note(sm, 2, f"{D['version']} | 5x3, 10 fixed lines | generated {D['generated'][:
 header(sm, 4, ['Measure', 'Value', 'Source'])
 summary = [
     ('RTP with the 5,000x cap (design RTP)', '=B6-B7', f_calc, PCT, 'Exact uncapped RTP minus the simulated cost of the cap', True),
-    ('Theoretical RTP (exact, uncapped)', f"='Line Wins Base'!E{base_total_row}+'Free Spins Feature'!B24", f_link, PCT, 'Exact from strips (formulas in this workbook)', False),
+    ('Theoretical RTP (exact, uncapped)', f"={KF_BASE}+'Free Spins Feature'!B24", f_link, PCT, 'Exact from strips (formulas in this workbook)', False),
     ('Cost of the 5,000x cap', X['capCost'], f_in, PCT,
      f"Simulated: {S['capSimulation']['features']:,} features played with no cap, average amount over 5,000x x P(trigger) "
      f"(95% CI +/- {X['capCostCi95'] * 100:.3f}%)", False),
-    ('  of which base game line wins', f"='Line Wins Base'!E{base_total_row}", f_link, PCT, 'Line Wins Base', False),
+    ('  of which base game (line wins incl. kingfisher)', f"={KF_BASE}", f_link, PCT, 'Kingfisher', False),
     ('  of which free spins feature', "='Free Spins Feature'!B24", f_link, PCT, 'Free Spins Feature', False),
     ('Simulated RTP', S['rtp'], f_in, PCT, f"Simulation, {S['rounds']:,} rounds", True),
     ('Simulated RTP 95% confidence (+/-)', S['ci95'], f_in, PCT, '1.96 x SD / sqrt(rounds)', False),
     ('Hit frequency (any line win in base spin)', S['hitFrequency'], f_in, PCT, 'Simulation', False),
     ('Feature frequency: 1 in', "='Free Spins Feature'!B9", f_link, '#,##0.0', 'Exact', False),
+    ('Kingfisher: 1 in', '=Kingfisher!B5', f_link, '#,##0', 'engine.js', False),
+    ('Kingfisher average line win (x stake)', f"=Kingfisher!D{kend + 1}", f_link, '0.00"x"', 'Exact', False),
     ('Expected free spins per feature', "='Free Spins Feature'!B14", f_link, '0.00', 'Exact', False),
     ('Expected feature win (x stake)', "='Free Spins Feature'!B23", f_link, '0.00"x"', 'Exact (uncapped)', False),
     ('  of which baited swims (x stake)', "='Free Spins Feature'!B22", f_link, '0.00"x"', 'Exact', False),

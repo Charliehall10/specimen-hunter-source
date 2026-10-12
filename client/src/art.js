@@ -1,7 +1,7 @@
 // Procedural artwork: every symbol, the lakeside scenes, reel frame and logo are drawn
 // with Canvas2D at start-up and turned into Pixi textures. No external image assets.
 import { Texture, CanvasSource } from 'pixi.js';
-import { W, H, CW, CH, GAP, REEL_W, REEL_H, FONT, GAME_NAME } from './config.js';
+import { W, H, CW, CH, REEL_W, REEL_H, FONT, GAME_NAME } from './config.js';
 
 // Symbols are redrawn at the size they appear on screen (device pixels per design pixel, set by main.js),
 // so they are never shrunk or stretched by the GPU and stay crisp on phones and large monitors alike.
@@ -52,37 +52,30 @@ function contourY(segs, x) {
 
 // Draw `draw` on its own layer, then put it down with a solid outline and a soft drop shadow, so the
 // symbol reads clearly on the water without a plate behind it (the "sticker" look used on most slots).
-function sticker(ctx, scale, draw, { outline = '#07141b', width = 2.6, shadowCol = 'rgba(0,0,0,0.6)' } = {}) {
-  const [art, a] = canvas(CW, CH, scale); draw(a);
-  const [sil, s] = canvas(CW, CH, scale);
+function sticker(ctx, scale, draw, { outline = '#07141b', width = 2.6, shadowCol = 'rgba(0,0,0,0.6)', w = CW, h = CH } = {}) {
+  const [art, a] = canvas(w, h, scale); draw(a);
+  const [sil, s] = canvas(w, h, scale);
   s.setTransform(1, 0, 0, 1, 0, 0); s.drawImage(art, 0, 0);
   s.globalCompositeOperation = 'source-in'; s.fillStyle = outline; s.fillRect(0, 0, sil.width, sil.height);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.shadowColor = shadowCol; ctx.shadowBlur = 9 * scale; ctx.shadowOffsetY = 5 * scale;
-  ctx.drawImage(sil, 0, 0);
-  ctx.shadowColor = 'transparent';
+  if (shadowCol) { ctx.shadowColor = shadowCol; ctx.shadowBlur = 9 * scale; ctx.shadowOffsetY = 5 * scale; ctx.drawImage(sil, 0, 0); ctx.shadowColor = 'transparent'; }
   const r = width * scale;
   for (let i = 0; i < 16; i++) { const t = i / 16 * Math.PI * 2; ctx.drawImage(sil, Math.cos(t) * r, Math.sin(t) * r); }
   ctx.drawImage(art, 0, 0);
   ctx.restore();
 }
-// Bend a drawing into a gentle arc (head and tail dip), like a fish caught mid-leap, and drop a soft shadow.
-// Shadows are only ever applied here at an identity transform: canvas shadows drawn under the large scale used
-// for fish geometry can wipe nearby pixels on some GPU canvas back ends.
-function arched(ctx, scale, draw, bend) {
-  const [art, a] = canvas(CW, CH, scale); draw(a);
-  const [bent, b] = canvas(CW, CH, scale); b.setTransform(1, 0, 0, 1, 0, 0);
-  const step = Math.max(1, Math.round(scale));
-  for (let x = 0; x < art.width; x += step) {
+function arched(ctx, scale, draw, bend, w = CW, h = CH) {
+  const [art, a] = canvas(w, h, scale); draw(a);
+  const [bent, b] = canvas(w, h, scale); b.setTransform(1, 0, 0, 1, 0, 0);
+  for (let x = 0; x < art.width; x++) {
     const u = x / art.width * 2 - 1;
-    b.drawImage(art, x, 0, step, art.height, x, bend * scale * u * u, step, art.height);
+    b.drawImage(art, x, 0, 1, art.height, x, bend * scale * u * u, 1, art.height);
   }
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 10 * scale; ctx.shadowOffsetY = 6 * scale;
   ctx.drawImage(bent, 0, 0);
   ctx.restore();
 }
-
 // ---------------------------------------------------------------- fish
 // Coordinates are in fish units: snout at x = -1, tail tip at x = +1, y down. Scaled by len / 2.
 const SPECIES = {
@@ -239,14 +232,11 @@ function fish(ctx, kind, { cx = CW / 2, cy = CH / 2 + 4, len = 152, tilt = -0.1 
     const rnd = seeded(9);
     for (let i = 0; i < 26; i++) ellipse(ctx, -0.5 + rnd() * 1.0, -0.25 + rnd() * 0.4, 0.03 + rnd() * 0.05, 0.02 + rnd() * 0.03, 'rgba(30,24,6,0.16)');
   }
-  // lateral line
-  ctx.setLineDash([3 / k, 3 / k]); ctx.strokeStyle = 'rgba(30,18,4,0.4)'; ctx.lineWidth = 1.4 / k;
-  ctx.beginPath(); for (let x = sp.gill + 0.04; x < 0.52; x += 0.02) { const y = (g.topY(x) * 0.55 + g.botY(x) * 0.45) - 0.01; x === sp.gill + 0.04 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
-  ctx.stroke(); ctx.setLineDash([]);
   // lighting: dark back towards the tail, bright upper flank, warm reflected light on the belly, rim light
   ctx.fillStyle = lin(ctx, -0.2, 0, 0.56, 0, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.28)']]); ctx.fillRect(-1.1, -1, 2.2, 2);
   ctx.fillStyle = rad(ctx, -0.42, -sp.bh * 0.45, 0.02, 0.75, [[0, 'rgba(255,255,240,0.32)'], [1, 'rgba(255,255,240,0)']]); ctx.fillRect(-1.1, -1, 2.2, 2);
-  ctx.beginPath(); ctx.ellipse(-0.18, -sp.bh * 0.55, 0.5, 0.05, -0.04, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fill();
+  ctx.save(); ctx.translate(-0.18, -sp.bh * 0.52); ctx.scale(1, 0.2);
+  ellipse(ctx, 0, 0, 0.5, 0.5, rad(ctx, 0, 0, 0, 0.5, [[0, 'rgba(255,255,255,0.2)'], [1, 'rgba(255,255,255,0)']])); ctx.restore();
   ctx.fillStyle = lin(ctx, 0, sp.vh * 0.4, 0, sp.vh, [[0, 'rgba(255,240,200,0)'], [1, 'rgba(255,240,200,0.35)']]); ctx.fillRect(-1.1, -1, 2.2, 2);
   ctx.translate(0, 3 / k); bodyPath(ctx, g, sp.sy);
   ctx.strokeStyle = lin(ctx, 0, -sp.bh, 0, 0, [[0, 'rgba(255,250,220,0.55)'], [0.6, 'rgba(255,250,220,0)']]); ctx.lineWidth = 3 / k; ctx.stroke();
@@ -257,8 +247,7 @@ function fish(ctx, kind, { cx = CW / 2, cy = CH / 2 + 4, len = 152, tilt = -0.1 
   ctx.beginPath(); ctx.moveTo(gx, gt); ctx.quadraticCurveTo(gx + 0.13, (gt + gb) / 2, gx - 0.03, gb); ctx.lineTo(-1.2, gb); ctx.lineTo(-1.2, gt); ctx.closePath();
   ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fill();
   ctx.beginPath(); ctx.moveTo(gx, gt); ctx.quadraticCurveTo(gx + 0.13, (gt + gb) / 2, gx - 0.03, gb);
-  ctx.strokeStyle = 'rgba(30,14,0,0.55)'; ctx.lineWidth = 2 / k; ctx.stroke();
-  ctx.translate(2 / k, 0); ctx.strokeStyle = 'rgba(255,250,220,0.35)'; ctx.lineWidth = 1.5 / k; ctx.stroke();
+  ctx.strokeStyle = 'rgba(30,14,0,0.3)'; ctx.lineWidth = 1.6 / k; ctx.stroke();
   ctx.restore();
   bodyPath(ctx, g, sp.sy); ctx.strokeStyle = 'rgba(16,8,0,0.8)'; ctx.lineWidth = 2.2 / k; ctx.stroke();
   // mouth and lips
@@ -299,12 +288,12 @@ function plate(ctx, sym) {
   rrect(ctx, x, y, w, h, 18); ctx.fillStyle = rad(ctx, CW / 2, CH * 0.42, 6, CW * 0.62, [[0, a], [1, b]]); ctx.fill();
   noShadow(ctx);
   ctx.save(); rrect(ctx, x, y, w, h, 18); ctx.clip();
-  // soft light burst behind the subject
-  ctx.globalAlpha = 0.14;
+  // soft light burst behind the subject: rays that fade out towards the rim
   for (let i = 0; i < 12; i++) {
     const a0 = i / 12 * Math.PI * 2;
-    ctx.beginPath(); ctx.moveTo(CW / 2, CH * 0.45); ctx.arc(CW / 2, CH * 0.45, CW, a0, a0 + 0.22); ctx.closePath();
-    ctx.fillStyle = glow; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(CW / 2, CH * 0.45); ctx.arc(CW / 2, CH * 0.45, CW * 0.7, a0, a0 + 0.24); ctx.closePath();
+    ctx.fillStyle = rad(ctx, CW / 2, CH * 0.45, 0, CW * 0.7, [[0, glow], [1, 'rgba(0,0,0,0)']]);
+    ctx.globalAlpha = 0.1; ctx.fill();
   }
   ctx.globalAlpha = 1;
   ellipse(ctx, CW / 2, CH * 0.45, CW * 0.42, CH * 0.36, rad(ctx, CW / 2, CH * 0.45, 0, CW * 0.42, [[0, 'rgba(255,255,255,0.22)'], [1, 'rgba(255,255,255,0)']]));
@@ -333,9 +322,12 @@ function ribbon(ctx, text, y, { fill = ['#fff6c0', '#f2c14e', '#b8780e'], fg = '
 }
 function sparkles(ctx, pts) {
   for (const [x, y, s] of pts) {
-    ctx.fillStyle = rad(ctx, x, y, 0, s * 2, [[0, 'rgba(255,255,230,0.9)'], [1, 'rgba(255,255,230,0)']]); ctx.fillRect(x - s * 2, y - s * 2, s * 4, s * 4);
-    ctx.beginPath(); ctx.moveTo(x - s * 2.2, y); ctx.lineTo(x + s * 2.2, y); ctx.moveTo(x, y - s * 2.2); ctx.lineTo(x, y + s * 2.2);
-    ctx.strokeStyle = 'rgba(255,255,240,0.9)'; ctx.lineWidth = 1.2; ctx.stroke();
+    ellipse(ctx, x, y, s * 2.4, s * 2.4, rad(ctx, x, y, 0, s * 2.4, [[0, 'rgba(255,255,230,0.75)'], [1, 'rgba(255,255,230,0)']]));
+    const r = s * 2.6, q = s * 0.35;
+    ctx.beginPath(); ctx.moveTo(x, y - r);
+    ctx.quadraticCurveTo(x + q, y - q, x + r, y); ctx.quadraticCurveTo(x + q, y + q, x, y + r);
+    ctx.quadraticCurveTo(x - q, y + q, x - r, y); ctx.quadraticCurveTo(x - q, y - q, x, y - r); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,245,0.95)'; ctx.fill();
   }
 }
 function droplets(ctx, pts) {
@@ -388,7 +380,6 @@ function hook(ctx, x, y, s = 1) {
 function drawBoilies(ctx) {
   // hair rig: line, hook and a snowman of two boilies (bottom bait + fluoro pop-up)
   ctx.strokeStyle = 'rgba(230,240,230,0.85)'; ctx.lineWidth = 1.6;
-  ctx.beginPath(); ctx.moveTo(122, 14); ctx.bezierCurveTo(118, 32, 126, 40, 120, 48); ctx.stroke();
   hook(ctx, 120, 82, 1.15);
   ctx.beginPath(); ctx.moveTo(114, 104); ctx.quadraticCurveTo(96, 104, 86, 92); ctx.stroke();
   boilie(ctx, 64, 88, 31, ['#ffd0b0', '#e2583a', '#8a1f10'], 3);
@@ -434,20 +425,41 @@ function drawCorn(ctx) {
   [[118, 104, 8.5, 0.6], [138, 112, 8, -0.8], [126, 118, 8.5, 2.1], [148, 98, 7.5, 1.3], [112, 120, 7.5, -0.3], [100, 122, 7, 2.6], [150, 120, 7, 0.2]]
     .sort((a, b) => a[1] - b[1]).forEach(([x, y, sz, r]) => kernel(ctx, x, y, sz, r));
 }
-function pellet(ctx, x, y, r, holed) {
-  const t = r * 0.5;   // thickness
-  ctx.beginPath(); ctx.ellipse(x, y + t, r, r * 0.5, 0, 0, Math.PI); ctx.lineTo(x - r, y); ctx.ellipse(x, y, r, r * 0.5, 0, Math.PI, 0, true); ctx.closePath();
-  ctx.fillStyle = lin(ctx, x - r, 0, x + r, 0, [[0, '#2a1004'], [0.4, '#6a3412'], [0.7, '#4a220a'], [1, '#1e0a02']]); ctx.fill();
-  ctx.strokeStyle = '#120600'; ctx.lineWidth = 1.2; ctx.stroke();
-  ellipse(ctx, x, y, r, r * 0.5, rad(ctx, x - r * 0.35, y - r * 0.25, 0, r * 1.2, [[0, '#d0915a'], [0.45, '#8a4a1c'], [1, '#4a2208']]), '#120600', 1.2);
-  const rnd = seeded(Math.round(x * 7 + y));
-  for (let i = 0; i < 7; i++) ellipse(ctx, x + (rnd() - 0.5) * r * 1.3, y + (rnd() - 0.5) * r * 0.6, 1.1, 0.7, 'rgba(40,16,2,0.55)');
-  if (holed) ellipse(ctx, x, y, r * 0.2, r * 0.1, '#0e0400');
-  ellipse(ctx, x - r * 0.4, y - r * 0.18, r * 0.3, r * 0.1, 'rgba(255,236,190,0.75)');
+// A cuboid of luncheon meat seen from above at an angle: footprint w x d turned by yaw, height h
+function meatCube(ctx, x, y, w, d, h, yaw, seed) {
+  const c = Math.cos(yaw), sn = Math.sin(yaw), squash = 0.55;
+  const P = (gx, gy, z) => [x + gx * c - gy * sn, y + (gx * sn + gy * c) * squash - z];
+  const base = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]];
+  const rnd = seeded(seed);
+  const face = (pts, fill, flecks) => {
+    const path = () => { ctx.beginPath(); pts.forEach((pt, i) => i ? ctx.lineTo(...pt) : ctx.moveTo(...pt)); ctx.closePath(); };
+    path(); ctx.fillStyle = fill; ctx.fill();
+    ctx.save(); path(); ctx.clip();
+    const xs = pts.map(pt => pt[0]), ys = pts.map(pt => pt[1]);
+    for (let i = 0; i < flecks; i++) {   // fat specks, and the odd darker fleck
+      const fx = Math.min(...xs) + rnd() * (Math.max(...xs) - Math.min(...xs)), fy = Math.min(...ys) + rnd() * (Math.max(...ys) - Math.min(...ys));
+      ellipse(ctx, fx, fy, 0.5 + rnd() * 0.9, 0.4 + rnd() * 0.6, i % 5 ? 'rgba(255,238,232,0.8)' : 'rgba(160,62,56,0.35)');
+    }
+    ctx.restore();
+    path(); ctx.strokeStyle = 'rgba(70,20,16,0.7)'; ctx.lineWidth = 1.2; ctx.stroke();
+  };
+  // side faces that point towards the viewer, then the top
+  const sides = [];
+  for (let i = 0; i < 4; i++) {
+    const [ax, ay] = base[i], [bx, by] = base[(i + 1) % 4];
+    const ny = ((ax + bx) / 2) * sn + ((ay + by) / 2) * c;   // how far the face points down the screen
+    if (ny > 0) sides.push({ i, ny, nx: ((ax + bx) / 2) * c - ((ay + by) / 2) * sn, pts: [P(ax, ay, 0), P(bx, by, 0), P(bx, by, h), P(ax, ay, h)] });
+  }
+  sides.sort((m, n) => m.ny - n.ny).forEach(f => face(f.pts, f.nx < 0 ? '#e0857a' : '#c2645a', Math.round(w * h / 18)));
+  const top = base.map(([gx, gy]) => P(gx, gy, h));
+  face(top, lin(ctx, top[0][0], top[0][1], top[2][0], top[2][1], [[0, '#ffcfc4'], [1, '#f3a093']]), Math.round(w * d / 16));
+  ctx.beginPath(); ctx.moveTo(...top[0]); ctx.lineTo(...top[1]); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.6; ctx.stroke();
 }
-function drawPellets(ctx) {
-  const ps = [[50, 66, 18, 0], [92, 60, 19, 1], [130, 72, 15, 0], [34, 94, 16, 0], [74, 90, 21, 0], [116, 96, 20, 0], [70, 40, 15, 0], [108, 34, 13, 1], [52, 116, 14, 0], [94, 118, 15, 0], [136, 112, 12, 0]];
-  ps.sort((a, b) => a[1] - b[1]).forEach(([x, y, r, h]) => pellet(ctx, x, y, r, h));
+function drawMeat(ctx) {
+  // the block it was cut from, then a heap of cubes in front
+  meatCube(ctx, 58, 64, 62, 44, 34, -0.35, 3);
+  [[116, 70, 0.5, 5], [142, 84, 0.15, 6], [52, 108, 0.7, 8], [86, 106, 0.25, 9], [120, 110, -0.3, 10], [148, 118, 0.4, 7]]
+    .sort((m, n) => m[1] - n[1]).forEach(([x, y, yaw, seed]) => meatCube(ctx, x, y, 24, 24, 20, yaw, seed));
 }
 function drawFlask(ctx) {
   const cx = CW / 2 - 6;
@@ -474,7 +486,7 @@ function drawFlask(ctx) {
   ctx.fillStyle = '#7a2a10'; ctx.font = `900 13px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('TEA', cx, 78);
   ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(cx - 19, 40, 5, 62);
 }
-function drawCatapult(ctx) {
+function drawCatapult(ctx, loaded = true) {
   ctx.save(); ctx.translate(CW / 2, CH / 2 + 2); ctx.rotate(-0.14);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   // handle with a ribbed rubber grip
@@ -494,9 +506,11 @@ function drawCatapult(ctx) {
   ctx.beginPath(); ctx.moveTo(-24, -12); ctx.quadraticCurveTo(0, 14, 24, -12); ctx.quadraticCurveTo(0, 0, -24, -12); ctx.closePath();
   ctx.fillStyle = lin(ctx, 0, -12, 0, 8, [[0, '#6a4428'], [1, '#2a160a']]); ctx.fill(); ctx.strokeStyle = '#120800'; ctx.lineWidth = 2; ctx.stroke();
   ctx.restore();
-  boilie(ctx, CW / 2 - 12, CH / 2 - 14, 10, ['#fffcc8', '#ffe02a', '#c08a00'], 2);
-  boilie(ctx, CW / 2 + 9, CH / 2 - 17, 10, ['#ffd0b0', '#e2583a', '#8a1f10'], 5);
-  boilie(ctx, CW / 2 - 1, CH / 2 - 6, 9, ['#ffd6ec', '#ff5aa5', '#9a1f58'], 8);
+  if (loaded) {
+    boilie(ctx, CW / 2 - 12, CH / 2 - 14, 10, ['#fffcc8', '#ffe02a', '#c08a00'], 2);
+    boilie(ctx, CW / 2 + 9, CH / 2 - 17, 10, ['#ffd0b0', '#e2583a', '#8a1f10'], 5);
+    boilie(ctx, CW / 2 - 1, CH / 2 - 6, 9, ['#ffd6ec', '#ff5aa5', '#9a1f58'], 8);
+  }
   ctx.save(); ctx.translate(CW / 2, CH / 2 + 2); ctx.rotate(-0.14);
   for (const sx of [-1, 1]) ellipse(ctx, sx * 40, -48, 7, 7, rad(ctx, sx * 40 - 2, -50, 0, 8, [[0, '#ffffff'], [1, '#6d767c']]), '#0d1114', 2);
   ctx.restore();
@@ -562,13 +576,14 @@ function drawAlarm(ctx) {
   const cx = CW / 2;
   // rod resting across the alarm
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#05070a'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(8, 34); ctx.lineTo(CW - 8, 24); ctx.stroke();
+  ctx.strokeStyle = '#05070a'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(22, 34); ctx.lineTo(CW - 22, 25); ctx.stroke();
   ctx.strokeStyle = lin(ctx, 0, 20, 0, 36, [[0, '#6c757e'], [0.5, '#2a3036'], [1, '#111']]); ctx.lineWidth = 6; ctx.stroke();
-  ctx.fillStyle = '#c9a24a'; ctx.fillRect(28, 28, 6, 7);
+  ctx.fillStyle = '#c9a24a'; ctx.fillRect(34, 28, 6, 7);
   // bank stick
   ctx.fillStyle = lin(ctx, cx - 5, 0, cx + 5, 0, [[0, '#4c5257'], [0.5, '#d9dfe3'], [1, '#4c5257']]); ctx.fillRect(cx - 5, 92, 10, 34);
   // swinger hanging below the rod
-  ctx.strokeStyle = '#d9dfe3'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx + 46, 30); ctx.lineTo(cx + 50, 74); ctx.stroke();
+  ctx.strokeStyle = '#0b0d10'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(cx + 46, 30); ctx.lineTo(cx + 50, 74); ctx.stroke();
+  ctx.strokeStyle = '#7c868e'; ctx.lineWidth = 2.5; ctx.stroke();
   rrect(ctx, cx + 44, 72, 13, 22, 5); ctx.fillStyle = lin(ctx, 0, 72, 0, 94, [[0, '#ff6b6b'], [1, '#9a0c0c']]); ctx.fill(); ctx.strokeStyle = '#2a0000'; ctx.lineWidth = 1.5; ctx.stroke();
   // alarm body
   shadow(ctx, 10, 5, 'rgba(0,0,0,0.6)');
@@ -587,7 +602,7 @@ function drawAlarm(ctx) {
 }
 
 const DRAW = {
-  FLOAT: drawFloat, BOILIE: drawBoilies, CORN: drawCorn, PELLET: drawPellets,
+  FLOAT: drawFloat, BOILIE: drawBoilies, CORN: drawCorn, MEAT: drawMeat,
   FLASK: drawFlask, CATAPULT: drawCatapult, NET: drawNet, BIVVY: drawBivvy,
   ROACH: (c, s) => arched(c, s, a => fish(a, 'ROACH', { len: 146, cy: CH / 2 + 4 }), 7),
   BREAM: (c, s) => arched(c, s, a => fish(a, 'BREAM', { len: 140, cy: CH / 2 + 6, tilt: -0.06 }), 5),
@@ -603,9 +618,9 @@ const DRAW = {
   ALARM: c => { drawAlarm(c); ribbon(c, 'BITE ALARM', CH - 20, { size: 14, fill: ['#ffd6d6', '#ff4d4d', '#8a0808'], fg: '#ffffff', edge: '#2a0000' }); },
   CASH: (c, s) => arched(c, s, a => fish(a, 'COMMON', { len: 140, cy: CH / 2 - 16, tilt: -0.08 }), 6),
 };
-const PLAIN = new Set(['FLOAT', 'BOILIE', 'CORN', 'PELLET', 'FLASK', 'CATAPULT', 'NET', 'BIVVY']);
+const PLAIN = new Set(['FLOAT', 'BOILIE', 'CORN', 'MEAT', 'FLASK', 'CATAPULT', 'NET', 'BIVVY']);
 export const SYMBOL_ORDER = ['MIRROR', 'TENCH', 'BREAM', 'ROACH', 'WILD', 'BIVVY', 'NET', 'CATAPULT', 'FLASK', 'ALARM',
-  'CORN', 'PELLET', 'BOILIE', 'FLOAT', 'CASH'];
+  'CORN', 'MEAT', 'BOILIE', 'FLOAT', 'CASH'];
 
 // One symbol as a canvas at `scale` device pixels per design pixel
 export function drawSymbolCanvas(sym, scale = artScale) {
@@ -626,25 +641,28 @@ export function makeSymbolTextures(scale = artScale) {
 export function drawReelBackground(ctx, w, h) {
   ctx.save();
   ctx.fillStyle = lin(ctx, 0, 0, 0, h, [[0, '#145466'], [0.45, '#0b3a4a'], [1, '#04161f']]); ctx.fillRect(0, 0, w, h);
+  // light shafts, each built from thin slivers so its edges fade out instead of ending in a hard line
   ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 7; i++) {
-    const x = w * (0.06 + i * 0.15);
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 46, 0); ctx.lineTo(x - 70, h); ctx.lineTo(x - 150, h); ctx.closePath();
-    ctx.fillStyle = lin(ctx, 0, 0, 0, h, [[0, 'rgba(160,230,220,0.07)'], [1, 'rgba(160,230,220,0)']]); ctx.fill();
+  for (let i = 0; i < 6; i++) {
+    const x = w * (0.08 + i * 0.17), width = 70;
+    for (let j = 0; j < 14; j++) {
+      const t = j / 13, a = 0.05 * Math.exp(-((t - 0.5) ** 2) / 0.06), sx = x + t * width;
+      ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx + width / 13, 0); ctx.lineTo(sx + width / 13 - 120, h); ctx.lineTo(sx - 120, h); ctx.closePath();
+      ctx.fillStyle = lin(ctx, 0, 0, 0, h, [[0, `rgba(160,230,220,${a})`], [1, 'rgba(160,230,220,0)']]); ctx.fill();
+    }
   }
   ctx.globalCompositeOperation = 'source-over';
+  // lake bed: a dark, soft-edged band with a few faint weed clumps
+  ctx.fillStyle = lin(ctx, 0, h * 0.7, 0, h, [[0, 'rgba(2,14,10,0)'], [1, 'rgba(2,14,10,0.55)']]); ctx.fillRect(0, h * 0.7, w, h * 0.3);
   const rnd = seeded(77);
-  ctx.strokeStyle = 'rgba(4,30,22,0.55)'; ctx.lineCap = 'round';
-  for (let x = 0; x < w; x += 7) {
-    const r = rnd(), hh = 30 + r * 70;
-    ctx.lineWidth = 2 + r * 3; ctx.beginPath(); ctx.moveTo(x, h + 4);
-    ctx.bezierCurveTo(x + (r - 0.5) * 30, h - hh * 0.4, x - (r - 0.5) * 30, h - hh * 0.7, x + (r - 0.5) * 20, h - hh); ctx.stroke();
+  for (let i = 0; i < 14; i++) {
+    const x = rnd() * w, r = 30 + rnd() * 40;
+    ellipse(ctx, x, h + 6, r, r * 0.7, rad(ctx, x, h + 6, 0, r, [[0, 'rgba(6,40,24,0.45)'], [1, 'rgba(6,40,24,0)']]));
   }
-  for (let i = 0; i < 40; i++) ellipse(ctx, rnd() * w, rnd() * h, 1 + rnd() * 2.5, 1 + rnd() * 2.5, null, 'rgba(200,240,255,0.18)', 1);
+  for (let i = 0; i < 26; i++) ellipse(ctx, rnd() * w, rnd() * h, 0.8 + rnd() * 1.4, 0.8 + rnd() * 1.4, 'rgba(200,240,255,0.12)');
   ctx.fillStyle = rad(ctx, w / 2, h / 2, h * 0.3, w * 0.62, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.45)']]); ctx.fillRect(0, 0, w, h);
   ctx.restore();
 }
-// A baited swim: a lit patch of lake bed with free offerings scattered on it (sits under the symbols)
 export function drawSwimPatch(ctx, w = CW, h = CH) {
   const cx = w / 2, cy = h / 2;
   ctx.save();
@@ -656,7 +674,6 @@ export function drawSwimPatch(ctx, w = CW, h = CH) {
     ellipse(ctx, x, y, r, r * 0.85, cols[i % cols.length], 'rgba(30,12,0,0.6)', 1);
     ellipse(ctx, x - r * 0.3, y - r * 0.3, r * 0.35, r * 0.25, 'rgba(255,255,255,0.6)');
   }
-  for (let i = 0; i < 5; i++) ellipse(ctx, cx + (rnd() - 0.5) * w * 0.7, cy + (rnd() - 0.5) * h * 0.7, 2 + rnd() * 2.5, 2 + rnd() * 2.5, null, 'rgba(230,250,255,0.5)', 1);
   ctx.restore();
 }
 export function makeSwimPatchTexture(scale = artScale) {
@@ -754,28 +771,154 @@ export function makeFrameTexture(scale = 2) {
   ctx.strokeStyle = 'rgba(242,193,78,0.6)'; ctx.lineWidth = 2; ctx.stroke();
   ctx.save(); rrect(ctx, pad, pad, REEL_W, REEL_H, 12); ctx.clip(); ctx.translate(pad, pad);
   drawReelBackground(ctx, REEL_W, REEL_H);
-  // faint dividers between the reels
-  for (let r = 1; r < 5; r++) {
-    const x = r * (CW + GAP) - GAP / 2;
-    ctx.fillStyle = lin(ctx, 0, 0, 0, REEL_H, [[0, 'rgba(255,255,255,0)'], [0.5, 'rgba(180,230,240,0.14)'], [1, 'rgba(255,255,255,0)']]); ctx.fillRect(x - 1, 0, 2, REEL_H);
-  }
   ctx.restore();
   return { texture: new Texture({ source: new CanvasSource({ resource: c, resolution: scale }) }), pad };
 }
 
-export function makeLogoTexture() {
-  const w = 760, h = 110, [c, ctx] = canvas(w, h, 2);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  // shrink longer names so they always fit the logo width
-  let size = 78; ctx.font = `bold ${size}px ${FONT}`;
-  while (ctx.measureText(GAME_NAME.toUpperCase()).width > w - 40 && size > 30) { size -= 2; ctx.font = `bold ${size}px ${FONT}`; }
-  shadow(ctx, 12, 5, 'rgba(0,0,0,0.7)');
-  ctx.lineWidth = 10; ctx.strokeStyle = '#2a1606'; ctx.lineJoin = 'round'; ctx.strokeText(GAME_NAME.toUpperCase(), w / 2, 52);
-  noShadow(ctx);
-  ctx.fillStyle = lin(ctx, 0, 22, 0, 82, [[0, '#fff6c8'], [0.45, '#f2c14e'], [0.55, '#d08a1a'], [1, '#ffdf7a']]);
-  ctx.fillText(GAME_NAME.toUpperCase(), w / 2, 52);
-  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeText(GAME_NAME.toUpperCase(), w / 2, 51);
-  return Texture.from(c);
+// ---------------------------------------------------------------- baiting (catapult) and the kingfisher
+const texOf = (c, scale) => new Texture({ source: new CanvasSource({ resource: c, resolution: scale, autoGenerateMipmaps: true }) });
+// Catapult for baiting the swims, loaded and just fired; and the handful of boilies it throws
+export function makeCatapultTextures(scale = artScale) {
+  const out = {};
+  for (const [k, loaded] of [['loaded', true], ['empty', false]]) {
+    const [c, ctx] = canvas(CW, CH, scale); sticker(ctx, scale, a => drawCatapult(a, loaded)); out[k] = texOf(c, scale);
+  }
+  return out;
+}
+export function makeBaitTexture(scale = artScale) {
+  const [c, ctx] = canvas(44, 34, scale);
+  boilie(ctx, 15, 20, 9, ['#fffcc8', '#ffe02a', '#c08a00'], 2);
+  boilie(ctx, 29, 17, 9, ['#ffd0b0', '#e2583a', '#8a1f10'], 5);
+  boilie(ctx, 22, 25, 7.5, ['#ffd6ec', '#ff5aa5', '#9a1f58'], 8);
+  return texOf(c, scale);
+}
+
+// Kingfisher, side on and facing right: 'up' and 'down' are the two wing beats, 'dive' is wings folded
+const KF = { blue: '#1a9be0', deep: '#0b4f94', cyan: '#62f0ff', orange: '#ff8f2e', rust: '#d9531a' };
+function kingfisherBody(ctx, pose) {
+  const wing = (up) => {
+    ctx.beginPath(); ctx.moveTo(92, 52);
+    if (up) { ctx.bezierCurveTo(84, 22, 62, 4, 30, 2); ctx.bezierCurveTo(44, 14, 50, 26, 46, 34); ctx.bezierCurveTo(58, 40, 70, 48, 78, 58); }
+    else { ctx.bezierCurveTo(84, 78, 66, 100, 40, 108); ctx.bezierCurveTo(50, 92, 52, 82, 48, 74); ctx.bezierCurveTo(60, 70, 70, 66, 78, 60); }
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, 90, 55, 34, up ? 4 : 104, [[0, KF.blue], [0.6, '#137cc0'], [1, '#08355f']]); ctx.fill();
+    ctx.strokeStyle = 'rgba(4,20,40,0.55)'; ctx.lineWidth = 1.4;
+    for (let i = 1; i < 4; i++) {   // primary feather tips
+      const t = i / 4; ctx.beginPath();
+      ctx.moveTo(up ? 78 - t * 28 : 78 - t * 28, up ? 46 - t * 30 : 66 + t * 30); ctx.lineTo(up ? 66 - t * 30 : 66 - t * 26, up ? 38 - t * 30 : 74 + t * 30); ctx.stroke();
+    }
+  };
+  if (pose === 'up') wing(true);
+  // tail
+  ctx.beginPath(); ctx.moveTo(48, 58); ctx.lineTo(20, 52); ctx.lineTo(22, 64); ctx.lineTo(50, 66); ctx.closePath();
+  ctx.fillStyle = KF.deep; ctx.fill();
+  // body: orange underneath, blue on top with the bright cyan back stripe
+  const body = () => { ctx.beginPath(); ctx.ellipse(78, 60, 34, 18, -0.12, 0, Math.PI * 2); };
+  body(); ctx.fillStyle = lin(ctx, 0, 44, 0, 78, [[0, KF.orange], [1, KF.rust]]); ctx.fill();
+  ctx.save(); body(); ctx.clip();
+  ctx.beginPath(); ctx.moveTo(40, 40); ctx.lineTo(120, 30); ctx.lineTo(120, 56); ctx.bezierCurveTo(96, 58, 70, 62, 40, 66); ctx.closePath();
+  ctx.fillStyle = lin(ctx, 0, 40, 0, 64, [[0, KF.deep], [1, KF.blue]]); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(48, 54); ctx.bezierCurveTo(66, 46, 86, 44, 104, 44);
+  ctx.strokeStyle = KF.cyan; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.restore();
+  // head: blue crown with pale speckles, orange cheek, white throat and neck patch, dagger bill
+  ellipse(ctx, 112, 46, 19, 17, lin(ctx, 0, 29, 0, 63, [[0, KF.deep], [0.55, KF.blue], [1, KF.blue]]));
+  const rnd = seeded(4);
+  for (let i = 0; i < 12; i++) ellipse(ctx, 100 + rnd() * 22, 33 + rnd() * 10, 1.2, 0.8, 'rgba(160,240,255,0.8)');
+  ctx.beginPath(); ctx.ellipse(110, 52, 13, 6, -0.1, 0, Math.PI * 2); ctx.fillStyle = KF.orange; ctx.fill();
+  ellipse(ctx, 96, 52, 5, 6, '#f6fbff');
+  ctx.beginPath(); ctx.ellipse(122, 58, 9, 5, 0.2, 0, Math.PI * 2); ctx.fillStyle = '#f6fbff'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(126, 44); ctx.lineTo(160, 52); ctx.lineTo(127, 54); ctx.closePath();
+  ctx.fillStyle = lin(ctx, 126, 0, 160, 0, [[0, '#1b1b1f'], [1, '#3a3a40']]); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(127, 49); ctx.lineTo(158, 52); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+  ellipse(ctx, 119, 45, 3.6, 3.6, '#050505'); ellipse(ctx, 118, 43.8, 1.2, 1.2, '#ffffff');
+  // feet tucked under
+  ellipse(ctx, 84, 77, 4, 2.2, '#e8442a');
+  if (pose === 'down') wing(false);
+  if (pose === 'dive') {   // wings folded along the back
+    ctx.beginPath(); ctx.moveTo(98, 50); ctx.bezierCurveTo(80, 44, 54, 46, 30, 56); ctx.bezierCurveTo(56, 60, 80, 62, 96, 60); ctx.closePath();
+    ctx.fillStyle = lin(ctx, 98, 0, 30, 0, [[0, KF.blue], [1, '#08355f']]); ctx.fill();
+  }
+}
+export function makeKingfisherTextures(scale = artScale) {
+  const out = {};
+  for (const pose of ['up', 'down', 'dive']) {
+    const [c, ctx] = canvas(170, 112, scale);
+    sticker(ctx, scale, a => kingfisherBody(a, pose), { w: 170, h: 112, width: 2.2, shadowCol: null });
+    out[pose] = texOf(c, scale);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- logo and app icon
+// The name in gold on a gentle arch: dark extrude, thick outline, gold fill, then a gloss on the top half
+function wordmark(ctx, text, cx, cy, size, radius, maxW) {
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const letters = [...text];
+  let ws, total;
+  for (;; size -= 2) {   // shrink longer names until they fit
+    ctx.font = `900 ${size}px ${FONT}`;
+    ws = letters.map(ch => ctx.measureText(ch).width + size * 0.03); total = ws.reduce((a, v) => a + v, 0);
+    if (total + size * 0.2 <= maxW || size < 30) break;
+  }
+  let acc = -total / 2;
+  const placed = letters.map((ch, i) => { const mid = acc + ws[i] / 2; acc += ws[i]; const a = mid / radius;
+    return { ch, a, x: cx + radius * Math.sin(a), y: cy + radius * (1 - Math.cos(a)) }; });
+  const each = fn => placed.forEach(l => { if (l.ch === ' ') return; ctx.save(); ctx.translate(l.x, l.y); ctx.rotate(l.a); fn(l); ctx.restore(); });
+  ctx.lineJoin = 'round';
+  each(l => { for (let d = size * 0.11; d > 0; d -= 1) { ctx.fillStyle = d > size * 0.09 ? '#120700' : '#4a2408'; ctx.fillText(l.ch, 0, d); } });
+  each(l => { ctx.lineWidth = size * 0.17; ctx.strokeStyle = '#1a0b02'; ctx.strokeText(l.ch, 0, 0); });
+  each(l => { ctx.fillStyle = lin(ctx, 0, -size * 0.74, 0, 0, [[0, '#fff8d6'], [0.32, '#f8cf5a'], [0.6, '#d48a1c'], [0.82, '#f2b33a'], [1, '#ffe692']]); ctx.fillText(l.ch, 0, 0); });
+  each(l => { ctx.lineWidth = size * 0.035; ctx.strokeStyle = 'rgba(255,250,220,0.6)'; ctx.strokeText(l.ch, 0, 0); });
+  each(l => { ctx.beginPath(); ctx.rect(-size, -size, size * 2, size * 0.62); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillText(l.ch, 0, 0); });
+  ctx.restore();
+}
+function splash(ctx, cx, cy, w) {
+  for (const [rx, a] of [[w * 0.5, 0.35], [w * 0.36, 0.55], [w * 0.22, 0.8]]) ellipse(ctx, cx, cy, rx, rx * 0.16, null, `rgba(210,245,255,${a})`, 3);
+  const rnd = seeded(21);
+  for (let i = 0; i < 16; i++) {
+    const a = Math.PI * (1.08 + rnd() * 0.84), d = w * (0.12 + rnd() * 0.3);
+    droplets(ctx, [[cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.9 - 8, 2.5 + rnd() * 4]]);
+  }
+}
+// kind 'header': the name only, for the top of the game screen. kind 'title': with a leaping mirror carp.
+export function makeLogoTexture(kind = 'header', scale = 2) {
+  if (kind === 'header') {
+    const [c, ctx] = canvas(900, 170, scale);
+    wordmark(ctx, GAME_NAME.toUpperCase(), 450, 116, 92, 4200, 860);
+    return texOf(c, scale);
+  }
+  const w = 900, h = 440, [c, ctx] = canvas(w, h, scale);
+  ellipse(ctx, w / 2, 230, 380, 170, rad(ctx, w / 2, 230, 0, 380, [[0, 'rgba(120,210,230,0.28)'], [1, 'rgba(120,210,230,0)']]));
+  splash(ctx, w / 2 + 40, 300, 420);
+  const [fc, f] = canvas(w, 300, scale);
+  arched(f, scale, a => fish(a, 'MIRROR', { cx: w / 2 + 20, cy: 150, len: 380, tilt: 0.28 }), 26, w, 300);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(fc, 0, 0); ctx.restore();
+  sparkles(ctx, [[w / 2 - 210, 70, 5], [w / 2 + 230, 46, 4], [w / 2 + 170, 120, 3]]);
+  wordmark(ctx, GAME_NAME.toUpperCase(), w / 2, 380, 100, 2600, 860);
+  return texOf(c, scale);
+}
+// App icon: a leaping mirror carp over lake water, in a gold-rimmed rounded square
+export function drawAppIcon(size) {
+  const [c, ctx] = canvas(512, 512, size / 512);
+  const r = 112;
+  ctx.save(); rrect(ctx, 8, 8, 496, 496, r); ctx.clip();
+  ctx.fillStyle = rad(ctx, 256, 190, 20, 420, [[0, '#2c9db3'], [0.55, '#0d4a5e'], [1, '#04161f']]); ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.moveTo(60 + i * 100, 0); ctx.lineTo(110 + i * 100, 0); ctx.lineTo(10 + i * 100, 512); ctx.lineTo(-40 + i * 100, 512); ctx.closePath();
+    ctx.fillStyle = lin(ctx, 0, 0, 0, 512, [[0, 'rgba(200,250,255,0.1)'], [1, 'rgba(200,250,255,0)']]); ctx.fill();
+  }
+  ctx.fillStyle = lin(ctx, 0, 330, 0, 512, [[0, 'rgba(8,60,80,0)'], [1, 'rgba(2,20,28,0.8)']]); ctx.fillRect(0, 330, 512, 182);
+  splash(ctx, 256, 392, 360);
+  ctx.restore();
+  const [fc, f] = canvas(512, 512, size / 512);
+  arched(f, size / 512, a => fish(a, 'MIRROR', { cx: 268, cy: 236, len: 400, tilt: 0.42 }), 30, 512, 512);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(fc, 0, 0); ctx.restore();
+  sparkles(ctx, [[120, 120, 7], [400, 96, 5]]);
+  rrect(ctx, 8, 8, 496, 496, r); ctx.strokeStyle = '#2a1604'; ctx.lineWidth = 14; ctx.stroke();
+  ctx.strokeStyle = lin(ctx, 0, 0, 0, 512, [[0, '#fff3c0'], [0.3, '#f2c14e'], [0.6, '#a8701a'], [1, '#f7d77a']]); ctx.lineWidth = 8; ctx.stroke();
+  return c;
 }
 
 // Small round particle (bubbles / sparkles / droplets)

@@ -10,7 +10,7 @@ export function cryptoRand() {
   return ((u[0] >>> 5) * 67108864 + (u[1] >>> 6)) / 9007199254740992;
 }
 export const PAY = {
-  FLOAT:[6,15,30], BOILIE:[6,15,30], CORN:[9,24,45], PELLET:[9,24,45],
+  FLOAT:[6,15,30], BOILIE:[6,15,30], CORN:[9,24,45], MEAT:[9,24,45],
   FLASK:[12,30,75], CATAPULT:[15,36,90], NET:[18,45,120], BIVVY:[24,60,150],
   ROACH:[30,75,180], BREAM:[36,90,240], TENCH:[45,120,360], MIRROR:[60,225,750],
 };
@@ -19,7 +19,7 @@ export const PAYLINES = [
   [0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[1,2,1,0,1],
 ];
 export const FISH = [ // [label, multiplier of total bet, weight]
-  ["2lb 4oz",0.5,394],["4lb 0oz",1,250],["6lb 8oz",2,170],["9lb 12oz",3,110],
+  ["2lb 4oz",0.5,396],["4lb 0oz",1,250],["6lb 8oz",2,170],["9lb 12oz",3,110],
   ["14lb 0oz",5,80],["19lb 8oz",8,38],["26lb 0oz",12,22.5],["32lb 8oz",20,13],
   ["38lb 12oz",50,6.5],["45lb 4oz",100,1.75],["52lb 0oz",250,0.5],["64lb 8oz",1000,0.1],
 ];
@@ -30,6 +30,12 @@ const FISH_TOTAL = FISH.reduce((a, f) => a + f[2], 0);
 export const SWIM_COUNT = 3;
 export const SWIM_LADDER = [2, 4, 8, 16, 32];
 export const swimMult = catches => SWIM_LADDER[Math.min(catches, SWIM_LADDER.length - 1)];
+// Kingfisher (base game only): on a base spin, with chance KINGFISHER_CHANCE, a kingfisher turns a few spots
+// into Leather Carp wilds (KINGFISHER_WILDS: [spots, chance]). It always takes reels 2, 3 and 4 on one row, so the
+// paylines along that row get at least four of a kind, then any extra spots at random elsewhere on reels 2-5.
+// A Bite Alarm in a chosen spot stays an alarm, so the feature trigger rate is unchanged.
+export const KINGFISHER_CHANCE = 1 / 300;
+export const KINGFISHER_WILDS = [[3, 0.6], [4, 0.3], [5, 0.1]];
 
 export function makeEngine(strips, rand = Math.random) {
   const drawFish = () => {
@@ -43,7 +49,18 @@ export function makeEngine(strips, rand = Math.random) {
     for (let i = 0; i < SWIM_COUNT; i++) { const j = i + Math.floor(rand() * (5 - i)); [reels[i], reels[j]] = [reels[j], reels[i]]; }
     return reels.slice(0, SWIM_COUNT).map(reel => ({ reel, row: Math.floor(rand() * 3), catches: 0 })).sort((a, b) => a.reel - b.reel);
   }
-  // swims (free spins only) is updated in place as fish are caught
+  // Kingfisher spots: reels 2-4 on a random row, then a partial shuffle of the other 9 cells on reels 2-5 for
+  // any extra spots; listed left to right, top to bottom
+  function kingfisherSpots() {
+    let x = rand(), n = KINGFISHER_WILDS[KINGFISHER_WILDS.length - 1][0];
+    for (const [k, w] of KINGFISHER_WILDS) { x -= w; if (x < 0) { n = k; break; } }
+    const row = Math.floor(rand() * 3), spots = [[1, row], [2, row], [3, row]], rest = [];
+    for (let r = 1; r < 5; r++) for (let k = 0; k < 3; k++) if (r === 4 || k !== row) rest.push([r, k]);
+    for (let i = 0; i < n - 3; i++) { const j = i + Math.floor(rand() * (rest.length - i)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+    return [...spots, ...rest.slice(0, n - 3)].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  }
+  // swims (free spins only) is updated in place as fish are caught.
+  // force (demo only): true or 'feature' drops in a Three Rods trigger; 'kingfisher' sends the kingfisher.
   function spin(set, force = false, swims = null) {
     const reels = set === 'fs' ? strips.free_spins : strips.base;
     const grid = reels.map(s => {
@@ -51,7 +68,13 @@ export function makeEngine(strips, rand = Math.random) {
       return [s[p], s[(p + 1) % s.length], s[(p + 2) % s.length]];
     });
     // DEMO ONLY: force a Three Rods trigger by dropping an alarm onto reels 2-4
-    if (force) [1, 2, 3].forEach(r => { if (!grid[r].includes('ALARM')) grid[r][Math.floor(rand() * 3)] = 'ALARM'; });
+    if (force === true || force === 'feature') [1, 2, 3].forEach(r => { if (!grid[r].includes('ALARM')) grid[r][Math.floor(rand() * 3)] = 'ALARM'; });
+    // Kingfisher: spots keep what the reels showed (`was`) so the client can show the dive turning them wild
+    let kingfisher = null;
+    if (set === 'base' && (force === 'kingfisher' || rand() < KINGFISHER_CHANCE)) {
+      kingfisher = { spots: kingfisherSpots().map(([reel, row]) => ({ reel, row, was: grid[reel][row] })) };
+      for (const w of kingfisher.spots) if (w.was !== 'ALARM') grid[w.reel][w.row] = 'WILD';
+    }
     let units = 0; const lines = [];
     PAYLINES.forEach((pl, i) => {
       const syms = pl.map((row, r) => grid[r][row]);
@@ -75,7 +98,7 @@ export function makeEngine(strips, rand = Math.random) {
       cashTotal += value * mult;
     }));
     const alarmReels = [1, 2, 3].map(r => grid[r].includes('ALARM'));
-    const res = { grid, lines, cash, total: units / 10 + cashTotal, alarmReels, trigger: alarmReels.every(Boolean) };
+    const res = { grid, lines, cash, total: units / 10 + cashTotal, alarmReels, trigger: alarmReels.every(Boolean), kingfisher };
     if (swims) res.swims = swims.map(w => ({ ...w }));   // swim state after this spin
     return res;
   }
