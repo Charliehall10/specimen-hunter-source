@@ -33,4 +33,4 @@ The Python simulator in `math/` defines the game and exports the reel strips. Th
 
 This is a **demo**: it uses demo money and a secure but **uncertified** random number generator, so it is not for real-money play. 18+ · [BeGambleAware.org](https://www.begambleaware.org/)
 
-Created by **Charlie Hall** · [LinkedIn](https://www.linkedin.com/in/charliehall20)
+**Charlie Hall** · [LinkedIn](https://www.linkedin.com/in/charliehall20)
